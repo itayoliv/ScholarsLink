@@ -122,7 +122,10 @@ Edit `backend\.env` and set a secret `PASSWORD_AES_KEY` (required — the API wi
 ```bash
 npm install --prefix backend
 npm install --prefix frontend
+npm run prisma:generate --prefix backend
 ```
+
+Backend install runs `prisma generate` via `postinstall`; re-run the generate step if you ever see `@prisma/client did not initialize yet`.
 
 ### 3. Start MySQL and run migrations
 

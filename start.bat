@@ -66,6 +66,16 @@ if errorlevel 1 (
   echo ERROR: frontend npm install failed.
   goto :fail
 )
+
+echo Generating Prisma client...
+pushd backend
+call npx prisma generate --schema prisma/schema.prisma
+if errorlevel 1 (
+  echo ERROR: prisma generate failed. The API cannot start without it.
+  popd
+  goto :fail
+)
+popd
 echo [OK] Dependencies installed.
 echo.
 
