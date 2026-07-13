@@ -6,6 +6,7 @@ import multer from 'multer';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { PrismaClient } from '@prisma/client';
+import * as demoStore from './demoStore.js';
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ const app = express();
 const prisma = new PrismaClient();
 const execAsync = promisify(exec);
 const port = process.env.PORT || 4000;
+let demoMode = false;
 const PASSWORD_AES_KEY = process.env.PASSWORD_AES_KEY;
 if (!PASSWORD_AES_KEY) {
   throw new Error('PASSWORD_AES_KEY is required. Copy backend/.env.example to backend/.env and set a secret key.');
@@ -74,6 +76,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 async function encryptPassword(plainPassword) {
+  if (demoMode) {
+    return String(plainPassword);
+  }
+
   const rows = await prisma.$queryRaw`
     SELECT TO_BASE64(AES_ENCRYPT(${String(plainPassword)}, ${PASSWORD_AES_KEY})) AS encrypted
   `;
@@ -81,6 +87,10 @@ async function encryptPassword(plainPassword) {
 }
 
 async function passwordMatches(plainPassword, encryptedPassword) {
+  if (demoMode) {
+    return String(plainPassword) === String(encryptedPassword);
+  }
+
   const rows = await prisma.$queryRaw`
     SELECT CAST(AES_DECRYPT(FROM_BASE64(${encryptedPassword}), ${PASSWORD_AES_KEY}) AS CHAR) AS plain
   `;
@@ -581,7 +591,17 @@ async function getUserFromSession(req) {
     return null;
   }
 
+  if (demoMode) {
+    return demoStore.findUserById(userId);
+  }
+
   return prisma.user.findUnique({ where: { id: userId } });
+}
+
+function demoUnavailable(feature = 'This feature') {
+  const error = new Error(`${feature} is unavailable while the API is running in demo mode (MySQL unreachable).`);
+  error.status = 503;
+  return error;
 }
 
 const placementInclude = {
@@ -645,12 +665,16 @@ async function activateMembershipForJoin(tx, studentId, placementId) {
 }
 
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, service: 'scholarslink-api' });
+  res.json({
+    ok: true,
+    service: 'scholarslink-api',
+    demoMode,
+    demoAccounts: demoMode ? demoStore.DEMO_ACCOUNTS : undefined,
+  });
 });
 
 app.post('/auth/register', asyncHandler(async (req, res) => {
   const { name, email, password, role } = req.body;
-  const dynamicData = await getWritableDynamicData('users', req.body, ['name', 'email', 'password', 'role']);
 
   if (!name || !email || !password || !validRoles.has(role)) {
     return res.status(400).json({ error: 'name, email, password, and a valid role are required.' });
@@ -660,6 +684,23 @@ app.post('/auth/register', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'password must be at least 6 characters.' });
   }
 
+  if (demoMode) {
+    if (demoStore.findUserByEmail(email)) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+
+    const user = demoStore.createUser({
+      name,
+      email,
+      password,
+      role,
+      phone: req.body.phone || null,
+    });
+    setSessionCookie(res, user.id);
+    return res.status(201).json(stripPassword(user));
+  }
+
+  const dynamicData = await getWritableDynamicData('users', req.body, ['name', 'email', 'password', 'role']);
   const existing = await prisma.user.findUnique({ where: { email } });
 
   if (existing) {
@@ -687,6 +728,17 @@ app.post('/auth/login', asyncHandler(async (req, res) => {
 
   if (!email || !password) {
     return res.status(400).json({ error: 'email and password are required.' });
+  }
+
+  if (demoMode) {
+    const user = demoStore.findUserByEmail(email);
+
+    if (!user || !demoStore.passwordMatchesDemo(password, user)) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    setSessionCookie(res, user.id);
+    return res.json(stripPassword(user));
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
@@ -723,6 +775,10 @@ app.post('/auth/logout', asyncHandler(async (_req, res) => {
 app.get('/admin/schema', asyncHandler(async (req, res) => {
   await requireAdmin(req);
 
+  if (demoMode) {
+    return res.json({ entities: demoStore.getStaticAdminSchemas() });
+  }
+
   const schemas = await Promise.all(
     Object.keys(adminEntities).map((entity) => getAdminEntitySchema(entity)),
   );
@@ -732,11 +788,24 @@ app.get('/admin/schema', asyncHandler(async (req, res) => {
 
 app.get('/admin/schema/:entity', asyncHandler(async (req, res) => {
   await requireAdmin(req);
+
+  if (demoMode) {
+    const schema = demoStore.getStaticAdminSchemas().find((item) => item.entity === req.params.entity);
+    if (!schema) {
+      return res.status(404).json({ error: 'Unknown admin entity.' });
+    }
+    return res.json(schema);
+  }
+
   res.json(await getAdminEntitySchema(req.params.entity));
 }));
 
 app.post('/admin/schema/refresh', asyncHandler(async (req, res) => {
   await requireAdmin(req);
+
+  if (demoMode) {
+    throw demoUnavailable('Schema refresh');
+  }
 
   const logs = [];
   let generateWarning = null;
@@ -785,7 +854,6 @@ app.post('/admin/schema/refresh', asyncHandler(async (req, res) => {
 
 app.post('/users', asyncHandler(async (req, res) => {
   const { name, email, password, role } = req.body;
-  const dynamicData = await getWritableDynamicData('users', req.body, ['name', 'email', 'password', 'role']);
 
   if (!name || !email || !password || !validRoles.has(role)) {
     return res.status(400).json({ error: 'name, email, password, and a valid role are required.' });
@@ -795,6 +863,22 @@ app.post('/users', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'password must be at least 6 characters.' });
   }
 
+  if (demoMode) {
+    if (demoStore.findUserByEmail(email)) {
+      return res.status(409).json({ error: 'An account with this email already exists.' });
+    }
+
+    const user = demoStore.createUser({
+      name,
+      email,
+      password,
+      role,
+      phone: req.body.phone || null,
+    });
+    return res.status(201).json(stripPassword(user));
+  }
+
+  const dynamicData = await getWritableDynamicData('users', req.body, ['name', 'email', 'password', 'role']);
   const existing = await prisma.user.findUnique({ where: { email } });
 
   if (existing) {
@@ -819,6 +903,12 @@ app.post('/users', asyncHandler(async (req, res) => {
 app.get('/users', asyncHandler(async (req, res) => {
   const { role } = req.query;
 
+  if (demoMode) {
+    return res.json(demoStore.listUsers({
+      role: role && validRoles.has(role) ? role : undefined,
+    }));
+  }
+
   const users = await prisma.user.findMany({
     where: role && validRoles.has(role) ? { role } : undefined,
     orderBy: { createdAt: 'desc' },
@@ -828,6 +918,9 @@ app.get('/users', asyncHandler(async (req, res) => {
 }));
 
 app.patch('/users/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Updating users');
+  }
   const id = parseId(req.params.id, 'id');
   const { name, email, password, role } = req.body;
   const dynamicData = await getWritableDynamicData('users', req.body, ['name', 'email', 'password', 'role']);
@@ -863,6 +956,10 @@ app.patch('/users/:id', asyncHandler(async (req, res) => {
 }));
 
 app.delete('/users/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Deleting users');
+  }
+
   const id = parseId(req.params.id, 'id');
 
   await prisma.$transaction(async (tx) => {
@@ -899,12 +996,21 @@ app.delete('/users/:id', asyncHandler(async (req, res) => {
 
 app.post('/placements', asyncHandler(async (req, res) => {
   const { name, description, supervisorId } = req.body;
-  const dynamicData = await getWritableDynamicData('placements', req.body, ['name', 'description', 'supervisorId']);
 
   if (!name || !supervisorId) {
     return res.status(400).json({ error: 'name and supervisorId are required.' });
   }
 
+  if (demoMode) {
+    const placement = demoStore.createPlacement({
+      name,
+      description,
+      supervisorId: parseId(supervisorId, 'supervisorId'),
+    });
+    return res.status(201).json(stripPasswordDeep(placement));
+  }
+
+  const dynamicData = await getWritableDynamicData('placements', req.body, ['name', 'description', 'supervisorId']);
   const placement = await prisma.placement.create({
     data: {
       name,
@@ -922,6 +1028,12 @@ app.post('/placements', asyncHandler(async (req, res) => {
 app.get('/placements', asyncHandler(async (req, res) => {
   const { supervisorId } = req.query;
 
+  if (demoMode) {
+    return res.json(stripPasswordDeep(demoStore.listPlacements({
+      supervisorId: supervisorId ? parseId(supervisorId, 'supervisorId') : undefined,
+    })));
+  }
+
   const placements = await prisma.placement.findMany({
     where: supervisorId
       ? { supervisorId: parseId(supervisorId, 'supervisorId') }
@@ -934,6 +1046,9 @@ app.get('/placements', asyncHandler(async (req, res) => {
 }));
 
 app.patch('/placements/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Updating placements');
+  }
   const id = parseId(req.params.id, 'id');
   const { name, description, supervisorId } = req.body;
   const dynamicData = await getWritableDynamicData('placements', req.body, ['name', 'description', 'supervisorId']);
@@ -955,6 +1070,10 @@ app.patch('/placements/:id', asyncHandler(async (req, res) => {
 }));
 
 app.delete('/placements/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Deleting placements');
+  }
+
   const id = parseId(req.params.id, 'id');
 
   await prisma.$transaction(async (tx) => {
@@ -969,12 +1088,21 @@ app.delete('/placements/:id', asyncHandler(async (req, res) => {
 
 app.post('/join-requests', asyncHandler(async (req, res) => {
   const { studentId, placementId, note } = req.body;
-  const dynamicData = await getWritableDynamicData('join-requests', req.body, ['studentId', 'placementId', 'note']);
 
   if (!studentId || !placementId) {
     return res.status(400).json({ error: 'studentId and placementId are required.' });
   }
 
+  if (demoMode) {
+    const joinRequest = demoStore.createJoinRequest({
+      studentId: parseId(studentId, 'studentId'),
+      placementId: parseId(placementId, 'placementId'),
+      note,
+    });
+    return res.status(201).json(stripPasswordDeep(joinRequest));
+  }
+
+  const dynamicData = await getWritableDynamicData('join-requests', req.body, ['studentId', 'placementId', 'note']);
   const joinRequest = await prisma.joinRequest.create({
     data: {
       studentId: parseId(studentId, 'studentId'),
@@ -991,6 +1119,14 @@ app.post('/join-requests', asyncHandler(async (req, res) => {
 
 app.get('/join-requests', asyncHandler(async (req, res) => {
   const { status, supervisorId, studentId } = req.query;
+
+  if (demoMode) {
+    return res.json(stripPasswordDeep(demoStore.listJoinRequests({
+      status: status && validRequestStatuses.has(status) ? status : undefined,
+      studentId: studentId ? parseId(studentId, 'studentId') : undefined,
+      supervisorId: supervisorId ? parseId(supervisorId, 'supervisorId') : undefined,
+    })));
+  }
 
   const joinRequests = await prisma.joinRequest.findMany({
     where: {
@@ -1013,6 +1149,13 @@ app.patch('/join-requests/:id', asyncHandler(async (req, res) => {
 
   if (!validRequestStatuses.has(status) || !reviewerId) {
     return res.status(400).json({ error: 'status and reviewerId are required.' });
+  }
+
+  if (demoMode) {
+    return res.json(stripPasswordDeep(demoStore.patchJoinRequest(id, {
+      status,
+      reviewerId: parseId(reviewerId, 'reviewerId'),
+    })));
   }
 
   const updatedRequest = await prisma.$transaction(async (tx) => {
@@ -1042,6 +1185,10 @@ app.patch('/join-requests/:id', asyncHandler(async (req, res) => {
 }));
 
 app.put('/join-requests/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Updating join requests');
+  }
+
   const id = parseId(req.params.id, 'id');
   const {
     studentId,
@@ -1095,6 +1242,10 @@ app.put('/join-requests/:id', asyncHandler(async (req, res) => {
 }));
 
 app.delete('/join-requests/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Deleting join requests');
+  }
+
   const id = parseId(req.params.id, 'id');
 
   await prisma.joinRequest.delete({ where: { id } });
@@ -1103,6 +1254,22 @@ app.delete('/join-requests/:id', asyncHandler(async (req, res) => {
 
 app.post('/hour-logs', asyncHandler(async (req, res) => {
   const { studentId, placementId, date, hours, description } = req.body;
+
+  if (!studentId || !placementId || !date || !hours) {
+    return res.status(400).json({ error: 'studentId, placementId, date, and hours are required.' });
+  }
+
+  if (demoMode) {
+    const hourLog = demoStore.createHourLog({
+      studentId: parseId(studentId, 'studentId'),
+      placementId: parseId(placementId, 'placementId'),
+      date,
+      hours,
+      description,
+    });
+    return res.status(201).json(stripPasswordDeep(hourLog));
+  }
+
   const dynamicData = await getWritableDynamicData('hour-logs', req.body, [
     'studentId',
     'placementId',
@@ -1110,10 +1277,6 @@ app.post('/hour-logs', asyncHandler(async (req, res) => {
     'hours',
     'description',
   ]);
-
-  if (!studentId || !placementId || !date || !hours) {
-    return res.status(400).json({ error: 'studentId, placementId, date, and hours are required.' });
-  }
 
   const hourLog = await prisma.hourLog.create({
     data: {
@@ -1133,6 +1296,14 @@ app.post('/hour-logs', asyncHandler(async (req, res) => {
 
 app.get('/hour-logs', asyncHandler(async (req, res) => {
   const { status, supervisorId, studentId } = req.query;
+
+  if (demoMode) {
+    return res.json(stripPasswordDeep(demoStore.listHourLogs({
+      status: status && validHoursStatuses.has(status) ? status : undefined,
+      studentId: studentId ? parseId(studentId, 'studentId') : undefined,
+      supervisorId: supervisorId ? parseId(supervisorId, 'supervisorId') : undefined,
+    })));
+  }
 
   const hourLogs = await prisma.hourLog.findMany({
     where: {
@@ -1157,6 +1328,13 @@ app.patch('/hour-logs/:id', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'status and reviewerId are required.' });
   }
 
+  if (demoMode) {
+    return res.json(stripPasswordDeep(demoStore.patchHourLog(id, {
+      status,
+      reviewerId: parseId(reviewerId, 'reviewerId'),
+    })));
+  }
+
   const hourLog = await prisma.hourLog.update({
     where: { id },
     data: {
@@ -1171,6 +1349,10 @@ app.patch('/hour-logs/:id', asyncHandler(async (req, res) => {
 }));
 
 app.put('/hour-logs/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Updating hour logs');
+  }
+
   const id = parseId(req.params.id, 'id');
   const {
     studentId,
@@ -1222,6 +1404,10 @@ app.put('/hour-logs/:id', asyncHandler(async (req, res) => {
 }));
 
 app.delete('/hour-logs/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Deleting hour logs');
+  }
+
   const id = parseId(req.params.id, 'id');
 
   await prisma.hourLog.delete({ where: { id } });
@@ -1230,6 +1416,15 @@ app.delete('/hour-logs/:id', asyncHandler(async (req, res) => {
 
 app.get('/memberships', asyncHandler(async (req, res) => {
   const { active, studentId, placementId } = req.query;
+
+  if (demoMode) {
+    return res.json(stripPasswordDeep(demoStore.listMemberships({
+      studentId: studentId ? parseId(studentId, 'studentId') : undefined,
+      placementId: placementId ? parseId(placementId, 'placementId') : undefined,
+      active: active === 'true' ? true : active === 'false' ? false : undefined,
+    })));
+  }
+
   const where = {
     ...(studentId ? { studentId: parseId(studentId, 'studentId') } : {}),
     ...(placementId ? { placementId: parseId(placementId, 'placementId') } : {}),
@@ -1248,6 +1443,9 @@ app.get('/memberships', asyncHandler(async (req, res) => {
 }));
 
 app.post('/memberships', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Creating memberships');
+  }
   const {
     studentId,
     placementId,
@@ -1297,6 +1495,10 @@ app.post('/memberships', asyncHandler(async (req, res) => {
 }));
 
 app.patch('/memberships/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Updating memberships');
+  }
+
   const id = parseId(req.params.id, 'id');
   const {
     studentId,
@@ -1345,6 +1547,10 @@ app.patch('/memberships/:id', asyncHandler(async (req, res) => {
 }));
 
 app.delete('/memberships/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Deleting memberships');
+  }
+
   const id = parseId(req.params.id, 'id');
 
   await prisma.placementMembership.delete({ where: { id } });
@@ -1358,6 +1564,10 @@ app.get('/form-options', asyncHandler(async (req, res) => {
     return res.status(401).json({ error: 'Not authenticated.' });
   }
 
+  if (demoMode) {
+    return res.json(demoStore.listFormOptions());
+  }
+
   const options = await prisma.formOption.findMany({
     orderBy: [{ fieldKey: 'asc' }, { sortOrder: 'asc' }, { label: 'asc' }],
   });
@@ -1366,6 +1576,10 @@ app.get('/form-options', asyncHandler(async (req, res) => {
 }));
 
 app.post('/form-options', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Creating form options');
+  }
+
   await requireAdmin(req);
   const { fieldKey, value, label, sortOrder = 0, active = true } = req.body;
 
@@ -1387,6 +1601,10 @@ app.post('/form-options', asyncHandler(async (req, res) => {
 }));
 
 app.patch('/form-options/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Updating form options');
+  }
+
   await requireAdmin(req);
   const id = parseId(req.params.id, 'id');
   const { fieldKey, value, label, sortOrder, active } = req.body;
@@ -1409,6 +1627,10 @@ app.patch('/form-options/:id', asyncHandler(async (req, res) => {
 }));
 
 app.delete('/form-options/:id', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Deleting form options');
+  }
+
   await requireAdmin(req);
   const id = parseId(req.params.id, 'id');
   await prisma.formOption.delete({ where: { id } });
@@ -1417,6 +1639,31 @@ app.delete('/form-options/:id', asyncHandler(async (req, res) => {
 
 app.get('/student/registration', asyncHandler(async (req, res) => {
   const student = await requireStudent(req);
+
+  if (demoMode) {
+    return res.json({
+      studentId: student.id,
+      firstName: '',
+      lastName: '',
+      idNumber: '',
+      gender: '',
+      dateOfBirth: null,
+      mailingAddress: '',
+      contactEmail: student.email,
+      mobilePhone: '',
+      fatherName: '',
+      motherName: '',
+      maritalStatus: '',
+      militaryService: '',
+      academicInstitutionName: '',
+      yearOfStudy: '',
+      fieldOfStudy: '',
+      weeklyStudyHours: 0,
+      volunteeringLocationFirstOption: '',
+      personalExplanationLetter: null,
+      files: [],
+    });
+  }
   const registration = await prisma.studentRegistration.findUnique({
     where: { studentId: student.id },
     include: {
@@ -1436,6 +1683,10 @@ app.get('/student/registration', asyncHandler(async (req, res) => {
 }));
 
 app.put('/student/registration', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Saving registration');
+  }
+
   const student = await requireStudent(req);
   const data = parseRegistrationBody(req.body);
 
@@ -1472,6 +1723,10 @@ app.put('/student/registration', asyncHandler(async (req, res) => {
 }));
 
 app.post('/student/registration/files/:fileType', upload.single('file'), asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Registration file uploads');
+  }
+
   const student = await requireStudent(req);
   const fileType = String(req.params.fileType || '').toUpperCase();
 
@@ -1528,6 +1783,10 @@ app.post('/student/registration/files/:fileType', upload.single('file'), asyncHa
 }));
 
 app.get('/student/registration/files/:fileType', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Registration file downloads');
+  }
+
   const user = await getUserFromSession(req);
 
   if (!user) {
@@ -1578,6 +1837,10 @@ app.get('/student/registration/files/:fileType', asyncHandler(async (req, res) =
 }));
 
 app.post('/student/registration/submit', asyncHandler(async (req, res) => {
+  if (demoMode) {
+    throw demoUnavailable('Submitting registration');
+  }
+
   const student = await requireStudent(req);
   const registration = await prisma.studentRegistration.findUnique({
     where: { studentId: student.id },
@@ -1610,6 +1873,14 @@ app.post('/student/registration/submit', asyncHandler(async (req, res) => {
 
 app.get('/students/:id/summary', asyncHandler(async (req, res) => {
   const studentId = parseId(req.params.id, 'id');
+
+  if (demoMode) {
+    const summary = demoStore.getStudentSummary(studentId);
+    if (!summary) {
+      return res.status(404).json({ error: 'Student not found.' });
+    }
+    return res.json(stripPasswordDeep(summary));
+  }
 
   const student = await prisma.user.findUnique({ where: { id: studentId } });
 
@@ -1645,6 +1916,10 @@ app.get('/students/:id/summary', asyncHandler(async (req, res) => {
 }));
 
 app.get('/admin/summary', asyncHandler(async (_req, res) => {
+  if (demoMode) {
+    return res.json(demoStore.getAdminSummary());
+  }
+
   const [students, supervisors, placements, pendingJoinRequests, pendingHourLogs, approvedHours] = await Promise.all([
     prisma.user.count({ where: { role: 'STUDENT' } }),
     prisma.user.count({ where: { role: 'SUPERVISOR' } }),
@@ -1679,6 +1954,25 @@ app.use((error, _req, res, _next) => {
   });
 });
 
-app.listen(port, () => {
-  console.log(`ScholarsLink API listening on http://localhost:${port}`);
-});
+async function startServer() {
+  try {
+    await prisma.$connect();
+    await prisma.$queryRaw`SELECT 1`;
+    demoMode = false;
+    console.log('ScholarsLink API connected to MySQL (live mode).');
+  } catch (error) {
+    demoMode = true;
+    console.warn('============================================================');
+    console.warn(' MySQL unreachable — ScholarsLink API running in DEMO MODE');
+    console.warn(' Login with: adm@gmail.com / sup@gmail.com / stu1@gmail.com / stu2@gmail.com');
+    console.warn(' Password: 123456');
+    console.warn(` Reason: ${error.message}`);
+    console.warn('============================================================');
+  }
+
+  app.listen(port, () => {
+    console.log(`ScholarsLink API listening on http://localhost:${port}${demoMode ? ' [demoMode]' : ''}`);
+  });
+}
+
+startServer();

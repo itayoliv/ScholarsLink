@@ -31,6 +31,7 @@ Scholarship programs often need a reliable way to prove volunteer hours. Scholar
 - **Student registration** with configurable form options and document uploads (BLOB storage)
 - **Dynamic admin CRUD** driven by schema introspection (`information_schema`) — generic entity pages without hardcoding every table UI
 - **Dockerized MySQL** with Prisma migrations for reproducible local setup
+- **Demo mode** — when MySQL is unreachable, the API serves in-memory sample users and rows so login and dashboards still work without Docker
 - **Companion SQL editor** for ad-hoc queries during development (localhost only)
 
 ## Screenshots
@@ -98,7 +99,7 @@ ScholarsLink/
 
 After cloning, double-click [`start.bat`](start.bat). It copies `.env` files if missing, installs dependencies, starts MySQL when Docker is available, migrates/seeds, then opens the backend and frontend.
 
-If Docker Desktop is not running, the script warns and continues so the **frontend** at http://localhost:5173 still starts. Login/API need MySQL — fix Docker and run `start.bat` again when ready.
+If Docker Desktop is not running, the script warns and continues. The backend then starts in **demo mode** with sample accounts so you can still explore login and dashboards without MySQL.
 
 ### Prerequisites
 
@@ -143,6 +144,21 @@ npm run dev:frontend
 ```
 
 Open **http://localhost:5173** — API listens on **http://localhost:4000**.
+
+### Demo mode
+
+When MySQL/Docker is unavailable (or `GET /health` reports `demoMode: true`), the API automatically switches to an in-memory demo store:
+
+| Role | Email | Password |
+|------|-------|----------|
+| Admin | `adm@gmail.com` | `123456` |
+| Supervisor | `sup@gmail.com` | `123456` |
+| Student | `stu1@gmail.com` | `123456` |
+| Student | `stu2@gmail.com` | `123456` |
+
+Both students have `formsCompleted: true` and sample placement / join / hour rows so each role dashboard shows data. Demo mutations stay in memory and reset when the backend restarts.
+
+The same accounts (and sample workflow) are also created by `npm run db:seed --prefix backend` when MySQL **is** up, so these credentials work in live mode after seeding.
 
 ## Core workflow
 

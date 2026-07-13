@@ -135,9 +135,11 @@ echo ========================================
 if "%DB_OK%"=="0" (
   echo.
   echo NOTE: Database setup did not fully succeed.
-  echo   The frontend should still open.
-  echo   Login / API may not work until Docker Desktop is running
-  echo   and you run start.bat again ^(or fix MySQL manually^).
+  echo   The API will start in DEMO MODE with sample accounts:
+  echo     adm@gmail.com / sup@gmail.com / stu1@gmail.com / stu2@gmail.com
+  echo     password: 123456
+  echo   Demo data is in-memory and resets when the backend restarts.
+  echo   For MySQL mode, start Docker Desktop and run start.bat again.
 )
 echo.
 echo Keep the Backend and Frontend windows open while using the app.

@@ -1,6 +1,10 @@
+import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 
+dotenv.config();
+
 const prisma = new PrismaClient();
+const PASSWORD_AES_KEY = process.env.PASSWORD_AES_KEY;
 
 const defaultOptions = {
   gender: [
@@ -59,6 +63,175 @@ const defaultOptions = {
   ],
 };
 
+const demoUsers = [
+  { email: 'adm@gmail.com', name: 'Demo Admin', role: 'ADMIN', formsCompleted: false },
+  { email: 'sup@gmail.com', name: 'Demo Supervisor', role: 'SUPERVISOR', formsCompleted: false },
+  { email: 'stu1@gmail.com', name: 'Demo Student One', role: 'STUDENT', formsCompleted: true },
+  { email: 'stu2@gmail.com', name: 'Demo Student Two', role: 'STUDENT', formsCompleted: true },
+];
+
+const DEMO_PASSWORD = '123456';
+
+async function encryptPassword(plainPassword) {
+  const rows = await prisma.$queryRaw`
+    SELECT TO_BASE64(AES_ENCRYPT(${String(plainPassword)}, ${PASSWORD_AES_KEY})) AS encrypted
+  `;
+  return rows[0]?.encrypted;
+}
+
+async function upsertDemoUser(account) {
+  const existing = await prisma.user.findUnique({ where: { email: account.email } });
+  const password = await encryptPassword(DEMO_PASSWORD);
+
+  if (existing) {
+    return prisma.user.update({
+      where: { email: account.email },
+      data: {
+        name: account.name,
+        role: account.role,
+        password,
+        formsCompleted: account.formsCompleted,
+      },
+    });
+  }
+
+  return prisma.user.create({
+    data: {
+      name: account.name,
+      email: account.email,
+      role: account.role,
+      password,
+      formsCompleted: account.formsCompleted,
+    },
+  });
+}
+
+async function seedDemoWorkflow(usersByEmail) {
+  const supervisor = usersByEmail.get('sup@gmail.com');
+  const student1 = usersByEmail.get('stu1@gmail.com');
+  const student2 = usersByEmail.get('stu2@gmail.com');
+
+  let placement = await prisma.placement.findFirst({
+    where: { name: 'Community Library', supervisorId: supervisor.id },
+  });
+
+  if (!placement) {
+    placement = await prisma.placement.create({
+      data: {
+        name: 'Community Library',
+        description: 'Help with after-school reading programs.',
+        supervisorId: supervisor.id,
+      },
+    });
+  }
+
+  for (const student of [student1, student2]) {
+    const activeMembership = await prisma.placementMembership.findFirst({
+      where: { studentId: student.id, active: true },
+    });
+
+    if (!activeMembership) {
+      await prisma.placementMembership.create({
+        data: {
+          studentId: student.id,
+          placementId: placement.id,
+          active: true,
+        },
+      });
+    }
+
+    const existingJoin = await prisma.joinRequest.findFirst({
+      where: { studentId: student.id, placementId: placement.id, status: 'APPROVED' },
+    });
+
+    if (!existingJoin) {
+      await prisma.joinRequest.create({
+        data: {
+          studentId: student.id,
+          placementId: placement.id,
+          status: 'APPROVED',
+          note: 'Seeded demo membership.',
+          reviewedById: supervisor.id,
+          reviewedAt: new Date(),
+        },
+      });
+    }
+  }
+
+  const pendingJoin = await prisma.joinRequest.findFirst({
+    where: { studentId: student1.id, placementId: placement.id, status: 'PENDING' },
+  });
+
+  if (!pendingJoin) {
+    await prisma.joinRequest.create({
+      data: {
+        studentId: student1.id,
+        placementId: placement.id,
+        status: 'PENDING',
+        note: 'Requesting schedule change.',
+      },
+    });
+  }
+
+  const approvedHours = await prisma.hourLog.findFirst({
+    where: { studentId: student1.id, placementId: placement.id, status: 'APPROVED' },
+  });
+
+  if (!approvedHours) {
+    await prisma.hourLog.create({
+      data: {
+        studentId: student1.id,
+        placementId: placement.id,
+        date: new Date('2026-01-12'),
+        hours: 3.5,
+        description: 'Reading circle with grade 3.',
+        status: 'APPROVED',
+        reviewedById: supervisor.id,
+        reviewedAt: new Date('2026-01-13'),
+      },
+    });
+  }
+
+  const pendingHoursStu2 = await prisma.hourLog.findFirst({
+    where: { studentId: student2.id, placementId: placement.id, status: 'PENDING' },
+  });
+
+  if (!pendingHoursStu2) {
+    await prisma.hourLog.create({
+      data: {
+        studentId: student2.id,
+        placementId: placement.id,
+        date: new Date('2026-01-14'),
+        hours: 2,
+        description: 'Shelving and catalog updates.',
+        status: 'PENDING',
+      },
+    });
+  }
+
+  const pendingHoursStu1 = await prisma.hourLog.findFirst({
+    where: {
+      studentId: student1.id,
+      placementId: placement.id,
+      status: 'PENDING',
+      description: 'Weekend literacy workshop.',
+    },
+  });
+
+  if (!pendingHoursStu1) {
+    await prisma.hourLog.create({
+      data: {
+        studentId: student1.id,
+        placementId: placement.id,
+        date: new Date('2026-01-16'),
+        hours: 4,
+        description: 'Weekend literacy workshop.',
+        status: 'PENDING',
+      },
+    });
+  }
+}
+
 async function main() {
   for (const [fieldKey, options] of Object.entries(defaultOptions)) {
     for (const [index, option] of options.entries()) {
@@ -86,6 +259,20 @@ async function main() {
   }
 
   console.log('Form options seeded.');
+
+  if (!PASSWORD_AES_KEY) {
+    console.warn('PASSWORD_AES_KEY missing — skipping demo user seed.');
+    return;
+  }
+
+  const usersByEmail = new Map();
+  for (const account of demoUsers) {
+    const user = await upsertDemoUser(account);
+    usersByEmail.set(user.email, user);
+  }
+
+  await seedDemoWorkflow(usersByEmail);
+  console.log('Demo users and sample workflow seeded (adm/sup/stu1/stu2@gmail.com, password 123456).');
 }
 
 main()

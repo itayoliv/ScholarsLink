@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import { apiRequest } from '../api';
 import { dashboardPathForRole, useAuth } from '../auth';
 
 const emptyRegister = {
@@ -17,8 +18,29 @@ export default function LoginPage() {
   const [mode, setMode] = useState('login');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState(emptyRegister);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    apiRequest('/health')
+      .then((data) => {
+        if (!cancelled) {
+          setDemoMode(Boolean(data.demoMode));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setDemoMode(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -73,6 +95,16 @@ export default function LoginPage() {
               Create account
             </button>
           </div>
+
+          {demoMode ? (
+            <p className="status">
+              Demo mode is on (MySQL unreachable). Try
+              {' '}
+              adm@gmail.com / sup@gmail.com / stu1@gmail.com / stu2@gmail.com
+              {' '}
+              with password 123456.
+            </p>
+          ) : null}
 
           {message ? <p className="status">{message}</p> : null}
 
