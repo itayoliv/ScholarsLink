@@ -1,0 +1,26 @@
+{
+  "name": "scholarslink",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Volunteer hours tracking platform for scholarship students.",
+  "scripts": {
+    "db:up": "docker compose up -d mysql",
+    "db:down": "docker compose down",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build:frontend": "npm run build --prefix frontend",
+    "prisma:migrate": "npm run prisma:migrate --prefix backend",
+    "prisma:pull": "npm run prisma:pull --prefix backend",
+    "prisma:studio": "npm run prisma:studio --prefix backend",
+    "sql-editor:server": "npm run dev --prefix sql-editor/server",
+    "sql-editor:client": "npm run dev --prefix sql-editor/client"
+  },
+  "keywords": [
+    "scholarship",
+    "volunteer-hours",
+    "mysql",
+    "prisma"
+  ],
+  "author": "",
+  "license": "MIT"
+}

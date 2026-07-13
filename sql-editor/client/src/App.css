@@ -1,0 +1,280 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.4;
+  font-weight: 400;
+  color: #e8eef8;
+  background: #0f141d;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 14px;
+  color: #fff;
+  background: #3b82f6;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: #334155;
+}
+
+button.ghost {
+  background: transparent;
+  border: 1px solid #334155;
+  color: #cbd5e1;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  height: 100%;
+  min-height: 100vh;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px;
+  border-right: 1px solid #243044;
+  background: #121826;
+  overflow: auto;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #60a5fa;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sidebar h1 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.sidebar section h2 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.sidebar li button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.sidebar li button:hover,
+.sidebar li button.active {
+  background: #1e293b;
+}
+
+.column-list {
+  margin: 0 0 6px 12px !important;
+  padding-left: 10px !important;
+  border-left: 1px solid #334155;
+}
+
+.column-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1px;
+  padding: 3px 0 3px 8px;
+  color: #cbd5e1;
+  font-size: 12px;
+}
+
+.column-list small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.workspace {
+  display: grid;
+  grid-template-rows: minmax(220px, 1fr) auto minmax(220px, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  padding: 12px 16px;
+  border-top: 1px solid #243044;
+  border-bottom: 1px solid #243044;
+  background: #151b27;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.editor-pane {
+  min-height: 0;
+}
+
+.editor-pane .cm-editor {
+  height: 100%;
+  font-size: 14px;
+}
+
+.editor-pane .cm-scroller {
+  overflow: auto;
+}
+
+.output-pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #0f141d;
+}
+
+.output-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid #243044;
+}
+
+.status,
+.muted {
+  color: #94a3b8;
+}
+
+.empty {
+  padding: 16px;
+}
+
+.results {
+  overflow: auto;
+  padding: 12px 16px 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.result-card {
+  border: 1px solid #243044;
+  border-radius: 12px;
+  background: #151b27;
+  padding: 12px;
+}
+
+.result-card.error {
+  border-color: #7f1d1d;
+  background: #1f1215;
+}
+
+.result-card pre {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+  color: #fecaca;
+}
+
+.grid-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.table-wrap {
+  overflow: auto;
+  max-height: 360px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+th,
+td {
+  border: 1px solid #243044;
+  padding: 6px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: #1e293b;
+  z-index: 1;
+}
+
+td em {
+  color: #64748b;
+  font-style: normal;
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .sidebar {
+    max-height: 240px;
+  }
+
+  .workspace {
+    grid-template-rows: 1fr auto 280px;
+  }
+}

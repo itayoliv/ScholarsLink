@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int                   @id @default(autoincrement())
+  name                 String
+  email                String                @unique
+  role                 Role
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  password             String
+  phone                String?               @db.VarChar(50)
+  formsCompleted       Boolean               @default(false)
+  reviewedHourLogs     HourLog[]             @relation("HourLogReviewer")
+  hourLogs             HourLog[]             @relation("StudentHourLogs")
+  reviewedJoinRequests JoinRequest[]         @relation("JoinRequestReviewer")
+  joinRequests         JoinRequest[]         @relation("StudentJoinRequests")
+  supervisedPlacements Placement[]           @relation("PlacementSupervisor")
+  memberships          PlacementMembership[] @relation("StudentMemberships")
+  studentRegistration  StudentRegistration?
+}
+
+model Placement {
+  id           Int                   @id @default(autoincrement())
+  name         String
+  description  String?
+  supervisorId Int
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  hourLogs     HourLog[]
+  joinRequests JoinRequest[]
+  supervisor   User                  @relation("PlacementSupervisor", fields: [supervisorId], references: [id])
+  memberships  PlacementMembership[]
+
+  @@index([supervisorId], map: "Placement_supervisorId_fkey")
+}
+
+model JoinRequest {
+  id           Int           @id @default(autoincrement())
+  studentId    Int
+  placementId  Int
+  status       RequestStatus @default(PENDING)
+  note         String?
+  reviewedById Int?
+  reviewedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  placement    Placement     @relation(fields: [placementId], references: [id])
+  reviewedBy   User?         @relation("JoinRequestReviewer", fields: [reviewedById], references: [id])
+  student      User          @relation("StudentJoinRequests", fields: [studentId], references: [id])
+
+  @@index([placementId], map: "JoinRequest_placementId_fkey")
+  @@index([reviewedById], map: "JoinRequest_reviewedById_fkey")
+  @@index([studentId], map: "JoinRequest_studentId_fkey")
+}
+
+model PlacementMembership {
+  id          Int       @id @default(autoincrement())
+  studentId   Int
+  placementId Int
+  active      Boolean   @default(true)
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+  placement   Placement @relation(fields: [placementId], references: [id])
+  student     User      @relation("StudentMemberships", fields: [studentId], references: [id])
+
+  @@index([studentId, active])
+  @@index([placementId], map: "PlacementMembership_placementId_fkey")
+}
+
+model HourLog {
+  id           Int         @id @default(autoincrement())
+  studentId    Int
+  placementId  Int
+  date         DateTime
+  hours        Decimal     @db.Decimal(5, 2)
+  description  String?
+  status       HoursStatus @default(PENDING)
+  reviewedById Int?
+  reviewedAt   DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  placement    Placement   @relation(fields: [placementId], references: [id])
+  reviewedBy   User?       @relation("HourLogReviewer", fields: [reviewedById], references: [id])
+  student      User        @relation("StudentHourLogs", fields: [studentId], references: [id])
+
+  @@index([placementId], map: "HourLog_placementId_fkey")
+  @@index([reviewedById], map: "HourLog_reviewedById_fkey")
+  @@index([studentId], map: "HourLog_studentId_fkey")
+}
+
+model StudentRegistration {
+  id                              Int                @id @default(autoincrement())
+  studentId                       Int                @unique
+  firstName                       String             @default("")
+  lastName                        String             @default("")
+  idNumber                        String             @default("")
+  gender                          String             @default("")
+  dateOfBirth                     DateTime?          @db.Date
+  mailingAddress                  String             @default("")
+  additionalAddress               String?
+  contactEmail                    String             @default("")
+  mobilePhone                     String             @default("")
+  additionalPhone                 String?
+  fatherName                      String             @default("")
+  motherName                      String             @default("")
+  spouseName                      String?
+  maritalStatus                   String             @default("")
+  numberOfChildren                Int                @default(0)
+  spouseStatus                    String?
+  preMilitaryAcademyYear          Boolean            @default(false)
+  militaryService                 String             @default("")
+  loneSoldierStatus               Boolean            @default(false)
+  academicInstitutionName         String             @default("")
+  yearOfStudy                     String             @default("")
+  fieldOfStudy                    String             @default("")
+  weeklyStudyHours                Int                @default(0)
+  previousCouncilScholarship      Boolean            @default(false)
+  volunteeringLocationFirstOption String             @default("")
+  firstOptionSubChoice            String?
+  volunteeringLocationSecondOption String?
+  thirdOptionSubChoice            String?
+  volunteeringLocationThirdOption String?
+  secondOptionSubChoice           String?
+  personalExplanationLetter       String?            @db.Text
+  createdAt                       DateTime           @default(now())
+  updatedAt                       DateTime           @updatedAt
+  student                         User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  files                           RegistrationFile[]
+}
+
+model RegistrationFile {
+  id             Int                  @id @default(autoincrement())
+  registrationId Int
+  fileType       RegistrationFileType
+  fileName       String
+  mimeType       String
+  fileSize       Int
+  data           Bytes                @db.LongBlob
+  uploadedAt     DateTime             @default(now())
+  registration   StudentRegistration  @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  @@unique([registrationId, fileType])
+  @@index([registrationId])
+}
+
+model FormOption {
+  id        Int     @id @default(autoincrement())
+  fieldKey  String
+  value     String
+  label     String
+  sortOrder Int     @default(0)
+  active    Boolean @default(true)
+
+  @@unique([fieldKey, value])
+  @@index([fieldKey, active, sortOrder])
+}
+
+enum Role {
+  STUDENT
+  SUPERVISOR
+  ADMIN
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum HoursStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RegistrationFileType {
+  CV
+  PERSONAL_LETTER
+  STUDENT_ID_COPY
+  PARENT_ID_COPY
+  ENROLLMENT_CERTIFICATE
+  CLASS_SCHEDULE
+  SERVICE_CERTIFICATE
+  PRE_MILITARY_CERTIFICATE
+  BANK_CONFIRMATION
+}

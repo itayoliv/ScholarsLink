@@ -1,0 +1,555 @@
+.app-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 24px 0 56px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.brand {
+  color: var(--text);
+  font-weight: 800;
+  font-size: 20px;
+  text-decoration: none;
+}
+
+.topbar-meta {
+  margin: 4px 0 0;
+}
+
+.page-hero {
+  margin-bottom: 18px;
+}
+
+.page-hero h1 {
+  margin: 0 0 8px;
+  font-size: clamp(28px, 4vw, 42px);
+  letter-spacing: -0.04em;
+}
+
+.page-hero p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 720px;
+}
+
+.status {
+  margin: 0 0 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  color: var(--muted);
+}
+
+.summary-grid,
+.panel-grid,
+.review-grid,
+.auth-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.summary-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+.summary-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.summary-card,
+.panel {
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: var(--soft-shadow);
+}
+
+.summary-card {
+  padding: 18px;
+}
+
+.summary-card span,
+.muted,
+.list-item span,
+.list-item small {
+  color: var(--muted);
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--text);
+  font-size: 30px;
+}
+
+.summary-card .summary-text {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.panel-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.panel-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.review-grid,
+.auth-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel {
+  padding: 20px;
+}
+
+.panel h2 {
+  margin: 0 0 14px;
+  font-size: 20px;
+}
+
+.info-panel ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.plain-list {
+  display: grid;
+  gap: 10px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+form {
+  display: grid;
+  gap: 10px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 12px;
+  color: var(--text);
+  background: #fbfcfe;
+  font: inherit;
+}
+
+textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 11px 16px;
+  color: #fff;
+  background: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+button.secondary {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.list-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fbfcfe;
+  align-items: center;
+}
+
+.list-item div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-pending {
+  color: #8a5a00;
+  background: #fff4d6;
+}
+
+.status-approved {
+  color: #0f6b3c;
+  background: #e5f8ee;
+}
+
+.status-rejected {
+  color: #9b1c1c;
+  background: #fde8e8;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.admin-nav-link {
+  padding: 9px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-nav-link:hover {
+  color: var(--accent);
+}
+
+.admin-nav-link.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-filters input,
+.admin-filters select {
+  width: auto;
+  min-width: 150px;
+  flex: 0 1 auto;
+  padding: 9px 11px;
+}
+
+.admin-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-count {
+  margin: 0 0 12px;
+  font-size: 13px;
+}
+
+.admin-table td {
+  font-size: 14px;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+button.small {
+  padding: 7px 13px;
+  font-size: 13px;
+}
+
+button.danger {
+  color: #9b1c1c;
+  background: #fde8e8;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(23, 32, 51, 0.45);
+}
+
+.modal-panel {
+  width: min(520px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.form-field {
+  display: grid;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.form-field > span {
+  font-weight: 600;
+}
+
+.form-field input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  justify-self: start;
+  padding: 0;
+}
+
+.form-field small {
+  font-size: 12px;
+}
+
+.form-actions {
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.field-picker {
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fbfcfe;
+}
+
+.field-picker-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.field-picker-header p {
+  margin: 4px 0 0;
+}
+
+.field-picker-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.field-picker-roles button.active {
+  color: #fff;
+  background: var(--accent);
+}
+
+.field-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.field-picker-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 13px;
+}
+
+.field-picker-option input {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  grid-row: span 2;
+}
+
+.field-picker-option small {
+  grid-column: 2;
+}
+
+.registration-form,
+.registration-files {
+  margin-bottom: 16px;
+}
+
+.registration-form {
+  display: grid;
+  gap: 12px;
+}
+
+.file-slot-list {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.file-slot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfcfe;
+}
+
+.file-slot div {
+  display: grid;
+  gap: 4px;
+}
+
+.file-upload-button {
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.file-upload-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-upload-button .button-like {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 9px 14px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .file-slot {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-toolbar,
+  .admin-toolbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-filters input,
+  .admin-filters select {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 1000px) {
+  .summary-grid,
+  .summary-grid-3,
+  .panel-grid,
+  .panel-grid-2,
+  .review-grid,
+  .auth-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    width: min(100% - 20px, 1180px);
+    padding-top: 10px;
+  }
+
+  .topbar,
+  .list-item {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar {
+    display: grid;
+  }
+
+  .actions,
+  .tabs {
+    flex-wrap: wrap;
+  }
+}

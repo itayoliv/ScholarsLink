@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      # Dummy URL — prisma validate/generate need DATABASE_URL but do not connect
+      DATABASE_URL: mysql://ci:ci@localhost:3306/scholarslink
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci --prefix backend
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Validate Prisma schema
+        run: npx prisma validate --schema prisma/schema.prisma
+        working-directory: backend
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema prisma/schema.prisma
+        working-directory: backend
+
+      - name: Lint frontend
+        run: npm run lint --prefix frontend
+
+      - name: Build frontend
+        run: npm run build --prefix frontend

@@ -1,0 +1,9 @@
+{
+  "name": "sql-editor",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client"
+  }
+}
