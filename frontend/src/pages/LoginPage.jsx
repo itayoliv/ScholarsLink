@@ -98,11 +98,8 @@ export default function LoginPage() {
 
           {demoMode ? (
             <p className="status">
-              Demo mode is on (MySQL unreachable). Try
-              {' '}
-              adm@gmail.com / sup@gmail.com / stu1@gmail.com / stu2@gmail.com
-              {' '}
-              with password 123456.
+              Demo mode - Try adm@gmail.com / sup@gmail.com / stu1@gmail.com / stu2@gmail.com with
+              password 123456
             </p>
           ) : null}
 

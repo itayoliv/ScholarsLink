@@ -1955,7 +1955,12 @@ app.use((error, _req, res, _next) => {
 });
 
 async function startServer() {
+  const forceDemo = ['1', 'true', 'yes'].includes(String(process.env.DEMO_MODE || '').toLowerCase());
+
   try {
+    if (forceDemo) {
+      throw new Error('DEMO_MODE forced by environment');
+    }
     await prisma.$connect();
     await prisma.$queryRaw`SELECT 1`;
     demoMode = false;
@@ -1970,7 +1975,25 @@ async function startServer() {
     console.warn('============================================================');
   }
 
-  app.listen(port, () => {
+  const server = app.listen(port);
+
+  server.on('error', (error) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7383/ingest/76763c12-b31d-43b3-8b80-eea38483679c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9c0104'},body:JSON.stringify({sessionId:'9c0104',runId:'pre-fix',hypothesisId:'H-PORT',location:'server.js:listen',message:'Listen error',data:{code:error.code,message:error.message,port:Number(port)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${port} is already in use.`);
+      console.error('Close the other ScholarsLink Backend window (or stop the process on that port), then try again.');
+    } else {
+      console.error(`Failed to bind port ${port}: ${error.message}`);
+    }
+    process.exit(1);
+  });
+
+  server.on('listening', () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7383/ingest/76763c12-b31d-43b3-8b80-eea38483679c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9c0104'},body:JSON.stringify({sessionId:'9c0104',runId:'pre-fix',hypothesisId:'H-PORT',location:'server.js:listen',message:'API listening',data:{demoMode,port:Number(port)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     console.log(`ScholarsLink API listening on http://localhost:${port}${demoMode ? ' [demoMode]' : ''}`);
   });
 }

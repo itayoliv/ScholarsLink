@@ -88,9 +88,9 @@ if not exist "sql-editor\server\.env" (
 
 echo Generating Prisma client...
 pushd backend
-call npx prisma generate --schema prisma/schema.prisma
+call node scripts\ensure-prisma-client.js
 if errorlevel 1 (
-  echo ERROR: prisma generate failed. The API cannot start without it.
+  echo ERROR: prisma generate failed and no usable Prisma client was found.
   popd
   goto :fail
 )
@@ -144,12 +144,22 @@ echo.
 :: --- Start apps ---
 echo Opening Backend, Frontend, and SQL Editor windows...
 
+netstat -ano | findstr ":4000" | findstr "LISTENING" >nul 2>&1
+if not errorlevel 1 (
+  echo.
+  echo WARNING: Port 4000 is already in use.
+  echo   Another ScholarsLink Backend is probably still running.
+  echo   Close that Backend window first, or login will hit the wrong API
+  echo   ^(demo accounts will fail if that process is not in DEMO MODE^).
+  echo.
+)
+
 netstat -ano | findstr ":5173" | findstr "LISTENING" >nul 2>&1
 if not errorlevel 1 (
   echo.
   echo WARNING: Port 5173 is already in use.
   echo   Close the other ScholarsLink Frontend window first.
-  echo   This demo frontend uses strictPort and will fail if 5173 is busy.
+  echo   This frontend uses strictPort and will fail if 5173 is busy.
   echo.
 )
 
@@ -162,10 +172,15 @@ if not errorlevel 1 (
   echo.
 )
 
-start "ScholarsLink Backend" cmd /k "cd /d ""%~dp0backend"" && npm run dev"
-start "ScholarsLink Frontend" cmd /k "cd /d ""%~dp0frontend"" && npm run dev"
-start "SQL Editor Server" cmd /k "cd /d ""%~dp0sql-editor\server"" && npm run dev"
-start "SQL Editor Client" cmd /k "cd /d ""%~dp0sql-editor\client"" && npm run dev"
+if "%DB_OK%"=="0" (
+  echo Starting Backend in DEMO MODE ^(DEMO_MODE=1^)...
+  start "ScholarsLink Backend" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run-with-job.ps1" -WorkDir "%~dp0backend" -Command "set DEMO_MODE=1&& npm run dev" -Label "Backend"
+) else (
+  start "ScholarsLink Backend" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run-with-job.ps1" -WorkDir "%~dp0backend" -Command "npm run dev" -Label "Backend"
+)
+start "ScholarsLink Frontend" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run-with-job.ps1" -WorkDir "%~dp0frontend" -Command "npm run dev" -Label "Frontend"
+start "SQL Editor Server" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run-with-job.ps1" -WorkDir "%~dp0sql-editor\server" -Command "npm run dev" -Label "SQL Editor Server"
+start "SQL Editor Client" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\run-with-job.ps1" -WorkDir "%~dp0sql-editor\client" -Command "npm run dev" -Label "SQL Editor Client"
 
 echo.
 echo ========================================
