@@ -41,11 +41,11 @@ Terminal 2 - UI (port 5174):
 npm run dev --prefix client
 ```
 
-Open http://localhost:5175
+Open http://localhost:5174
 
-> If port `5174` is already used by the main frontend Vite server, pick the next free port shown in the terminal.
+> The client uses `strictPort` on `5174`. If that port is already taken (often by another main frontend Vite), close that process and try again — do not assume the SQL editor moved to another port.
 
-From the repo root you can also use:
+From the repo root you can also use [`start.bat`](../start.bat) or [`run-sql-editor.bat`](../run-sql-editor.bat), or:
 
 ```bash
 npm run sql-editor:server

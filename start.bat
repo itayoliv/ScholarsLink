@@ -67,6 +67,25 @@ if errorlevel 1 (
   goto :fail
 )
 
+echo Installing SQL editor dependencies...
+call npm install --prefix sql-editor\server
+if errorlevel 1 (
+  echo ERROR: sql-editor server npm install failed.
+  goto :fail
+)
+call npm install --prefix sql-editor\client
+if errorlevel 1 (
+  echo ERROR: sql-editor client npm install failed.
+  goto :fail
+)
+
+if not exist "sql-editor\server\.env" (
+  if exist "sql-editor\server\.env.example" (
+    copy /Y "sql-editor\server\.env.example" "sql-editor\server\.env" >nul
+    echo Created sql-editor\server\.env from example.
+  )
+)
+
 echo Generating Prisma client...
 pushd backend
 call npx prisma generate --schema prisma/schema.prisma
@@ -123,14 +142,37 @@ if errorlevel 1 (
 echo.
 
 :: --- Start apps ---
-echo Opening Backend and Frontend windows...
+echo Opening Backend, Frontend, and SQL Editor windows...
+
+netstat -ano | findstr ":5173" | findstr "LISTENING" >nul 2>&1
+if not errorlevel 1 (
+  echo.
+  echo WARNING: Port 5173 is already in use.
+  echo   Close the other ScholarsLink Frontend window first.
+  echo   This demo frontend uses strictPort and will fail if 5173 is busy.
+  echo.
+)
+
+netstat -ano | findstr ":5174" | findstr "LISTENING" >nul 2>&1
+if not errorlevel 1 (
+  echo.
+  echo WARNING: Port 5174 is already in use.
+  echo   That is usually another Vite app ^(not the SQL editor^).
+  echo   Close that window so the SQL editor can use http://localhost:5174
+  echo.
+)
+
 start "ScholarsLink Backend" cmd /k "cd /d ""%~dp0backend"" && npm run dev"
 start "ScholarsLink Frontend" cmd /k "cd /d ""%~dp0frontend"" && npm run dev"
+start "SQL Editor Server" cmd /k "cd /d ""%~dp0sql-editor\server"" && npm run dev"
+start "SQL Editor Client" cmd /k "cd /d ""%~dp0sql-editor\client"" && npm run dev"
 
 echo.
 echo ========================================
-echo   Frontend: http://localhost:5173
-echo   API:      http://localhost:4000
+echo   Frontend:    http://localhost:5173
+echo   API:         http://localhost:4000
+echo   SQL Editor:  http://localhost:5174
+echo   SQL API:     http://localhost:4100
 echo ========================================
 if "%DB_OK%"=="0" (
   echo.
@@ -139,10 +181,11 @@ if "%DB_OK%"=="0" (
   echo     adm@gmail.com / sup@gmail.com / stu1@gmail.com / stu2@gmail.com
   echo     password: 123456
   echo   Demo data is in-memory and resets when the backend restarts.
+  echo   SQL Editor needs MySQL — start Docker Desktop and run start.bat again.
   echo   For MySQL mode, start Docker Desktop and run start.bat again.
 )
 echo.
-echo Keep the Backend and Frontend windows open while using the app.
+echo Keep the Backend, Frontend, and SQL Editor windows open while using the app.
 pause
 exit /b 0
 

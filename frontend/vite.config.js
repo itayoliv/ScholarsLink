@@ -7,6 +7,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    strictPort: true,
     // Same-origin API via proxy so phone/ngrok only need one URL.
     proxy: {
       '/auth': { target: 'http://127.0.0.1:4000', changeOrigin: true },

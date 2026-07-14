@@ -97,9 +97,18 @@ ScholarsLink/
 
 ### Windows (one click)
 
-After cloning, double-click [`start.bat`](start.bat). It copies `.env` files if missing, installs dependencies, starts MySQL when Docker is available, migrates/seeds, then opens the backend and frontend.
+After cloning, double-click [`start.bat`](start.bat). It copies `.env` files if missing, installs dependencies (including the SQL editor), starts MySQL when Docker is available, migrates/seeds, then opens:
 
-If Docker Desktop is not running, the script warns and continues. The backend then starts in **demo mode** with sample accounts so you can still explore login and dashboards without MySQL.
+| App | URL |
+|-----|-----|
+| Frontend | http://localhost:5173 |
+| API | http://localhost:4000 |
+| SQL Editor UI | http://localhost:5174 |
+| SQL Editor API | http://localhost:4100 |
+
+The main frontend and SQL editor use `strictPort`, so if another Vite process already holds `5173` or `5174`, startup fails instead of silently stealing ports. Close other ScholarsLink windows first — do not run two main frontends at once.
+
+If Docker Desktop is not running, the script warns and continues. The backend then starts in **demo mode** with sample accounts so you can still explore login and dashboards without MySQL. The SQL editor still needs MySQL for queries.
 
 ### Prerequisites
 
@@ -143,7 +152,7 @@ npm run dev:backend
 npm run dev:frontend
 ```
 
-Open **http://localhost:5173** — API listens on **http://localhost:4000**.
+Open **http://localhost:5173** for the app — API on **http://localhost:4000**. SQL Editor UI is **http://localhost:5174** (API **http://localhost:4100**) when started via `start.bat` or the commands below.
 
 ### Demo mode
 
@@ -188,12 +197,16 @@ The same accounts (and sample workflow) are also created by `npm run db:seed --p
 
 ## Optional: SQL editor
 
-A standalone query tool lives in [`sql-editor/`](sql-editor/). Useful for debugging.
+A standalone MySQL query tool lives in [`sql-editor/`](sql-editor/). [`start.bat`](start.bat) and [`run-sql-editor.bat`](run-sql-editor.bat) already install and launch it (UI on **5174**, API on **4100**). It needs a running MySQL instance — API demo mode does not cover the SQL editor.
+
+To start it manually:
 
 ```bash
 npm run sql-editor:server
 npm run sql-editor:client
 ```
+
+Open **http://localhost:5174**. If that port is busy, close the other Vite process (often a second main frontend) rather than assuming the SQL editor moved.
 
 See [sql-editor/README.md](sql-editor/README.md).
 
