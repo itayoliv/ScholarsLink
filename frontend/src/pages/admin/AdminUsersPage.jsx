@@ -1,54 +1,63 @@
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../../api';
 import AdminEntityPage from '../../components/AdminEntityPage';
 
-const roleOptions = [
-  { value: 'STUDENT', label: 'Scholarship student' },
-  { value: 'SUPERVISOR', label: 'Volunteer supervisor' },
-  { value: 'ADMIN', label: 'Administrator' },
-];
-
-const columns = [
-  { key: 'id', label: 'ID' },
-  { key: 'name', label: 'Name', filter: { type: 'text' } },
-  { key: 'email', label: 'Email', filter: { type: 'text' } },
-  {
-    key: 'phone',
-    label: 'Phone',
-    filter: { type: 'text' },
-    render: (record) => record.phone || '—',
-  },
-  { key: 'role', label: 'Role', filter: { type: 'select', options: roleOptions } },
-  {
-    key: 'createdAt',
-    label: 'Created',
-    render: (record) => new Date(record.createdAt).toLocaleDateString(),
-  },
-];
-
-function getFields(mode) {
-  return [
-    { name: 'name', label: 'Full name', type: 'text', required: true },
-    { name: 'email', label: 'Email', type: 'email', required: true },
-    { name: 'phone', label: 'Phone', type: 'tel' },
-    {
-      name: 'password',
-      label: mode === 'edit' ? 'New password' : 'Password',
-      type: 'password',
-      required: mode !== 'edit',
-      minLength: 6,
-      hint: mode === 'edit' ? 'Leave empty to keep the current password.' : 'At least 6 characters.',
-    },
-    { name: 'role', label: 'Role', type: 'select', options: roleOptions, required: true },
-  ];
-}
-
 export default function AdminUsersPage() {
+  const { t, i18n } = useTranslation();
+
+  const roleOptions = useMemo(() => [
+    { value: 'STUDENT', label: t('roles.STUDENT') },
+    { value: 'SUPERVISOR', label: t('roles.SUPERVISOR') },
+    { value: 'ADMIN', label: t('roles.ADMIN') },
+  ], [t]);
+
+  const columns = useMemo(() => [
+    { key: 'id', label: t('common.id') },
+    { key: 'name', label: t('common.name'), filter: { type: 'text' } },
+    { key: 'email', label: t('common.email'), filter: { type: 'text' } },
+    {
+      key: 'phone',
+      label: t('common.phone'),
+      filter: { type: 'text' },
+      render: (record) => record.phone || '—',
+    },
+    {
+      key: 'role',
+      label: t('common.role'),
+      filter: { type: 'select', options: roleOptions },
+      render: (record) => t(`roles.${record.role}`, { defaultValue: record.role }),
+    },
+    {
+      key: 'createdAt',
+      label: t('common.created'),
+      render: (record) => new Date(record.createdAt).toLocaleDateString(i18n.language),
+    },
+  ], [t, i18n.language, roleOptions]);
+
+  function getFields(mode) {
+    return [
+      { name: 'name', label: t('common.fullName'), type: 'text', required: true },
+      { name: 'email', label: t('common.email'), type: 'email', required: true },
+      { name: 'phone', label: t('common.phone'), type: 'tel' },
+      {
+        name: 'password',
+        label: mode === 'edit' ? t('admin.users.newPassword') : t('common.password'),
+        type: 'password',
+        required: mode !== 'edit',
+        minLength: 6,
+        hint: mode === 'edit' ? t('admin.users.passwordEditHint') : t('admin.users.passwordCreateHint'),
+      },
+      { name: 'role', label: t('common.role'), type: 'select', options: roleOptions, required: true },
+    ];
+  }
+
   return (
     <AdminEntityPage
-      title="Manage users"
-      subtitle="View, filter, add, edit, and remove user accounts."
+      title={t('admin.users.title')}
+      subtitle={t('admin.users.subtitle')}
       entity="users"
-      entityLabel="User"
+      entityLabel={t('admin.entities.user')}
       fieldPickerRoles={roleOptions}
       loadRecords={() => apiRequest('/users')}
       columns={columns}

@@ -1,15 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../../api';
 import AdminEntityPage from '../../components/AdminEntityPage';
 import StatusBadge from '../../components/StatusBadge';
 
-const statusOptions = [
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
-];
-
 export default function AdminHourLogsPage() {
+  const { t, i18n } = useTranslation();
   const [users, setUsers] = useState([]);
   const [placements, setPlacements] = useState([]);
 
@@ -22,6 +18,12 @@ export default function AdminHourLogsPage() {
       .catch(() => {});
   }, []);
 
+  const statusOptions = useMemo(() => [
+    { value: 'PENDING', label: t('status.PENDING') },
+    { value: 'APPROVED', label: t('status.APPROVED') },
+    { value: 'REJECTED', label: t('status.REJECTED') },
+  ], [t]);
+
   const studentOptions = useMemo(
     () => users
       .filter((user) => user.role === 'STUDENT')
@@ -32,8 +34,11 @@ export default function AdminHourLogsPage() {
   const reviewerOptions = useMemo(
     () => users
       .filter((user) => user.role !== 'STUDENT')
-      .map((user) => ({ value: String(user.id), label: `${user.name} (${user.role})` })),
-    [users],
+      .map((user) => ({
+        value: String(user.id),
+        label: `${user.name} (${t(`rolesShort.${user.role}`, { defaultValue: user.role })})`,
+      })),
+    [users, t],
   );
 
   const placementOptions = useMemo(
@@ -42,90 +47,90 @@ export default function AdminHourLogsPage() {
   );
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'ID' },
+    { key: 'id', label: t('common.id') },
     {
       key: 'studentId',
-      label: 'Student',
+      label: t('common.student'),
       render: (record) => record.student?.name || '—',
       filter: { type: 'select', options: studentOptions },
     },
     {
       key: 'placementId',
-      label: 'Placement',
+      label: t('common.placement'),
       render: (record) => record.placement?.name || '—',
       filter: { type: 'select', options: placementOptions },
     },
     {
       key: 'date',
-      label: 'Date',
-      render: (record) => new Date(record.date).toLocaleDateString(),
+      label: t('common.date'),
+      render: (record) => new Date(record.date).toLocaleDateString(i18n.language),
       filter: {
         type: 'text',
-        getValue: (record) => new Date(record.date).toLocaleDateString(),
+        getValue: (record) => new Date(record.date).toLocaleDateString(i18n.language),
       },
     },
     {
       key: 'hours',
-      label: 'Hours',
+      label: t('common.hours'),
       render: (record) => String(record.hours),
     },
     {
       key: 'description',
-      label: 'Description',
+      label: t('common.description'),
       render: (record) => record.description || '—',
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('common.status'),
       render: (record) => <StatusBadge status={record.status} />,
       filter: { type: 'select', options: statusOptions },
     },
     {
       key: 'reviewedById',
-      label: 'Reviewed by',
+      label: t('admin.reviewedBy'),
       render: (record) => record.reviewedBy?.name || '—',
     },
-  ], [studentOptions, placementOptions]);
+  ], [t, i18n.language, studentOptions, placementOptions, statusOptions]);
 
   function getFields(mode) {
     const fields = [
       {
         name: 'studentId',
-        label: 'Student',
+        label: t('common.student'),
         type: 'select',
         options: studentOptions,
-        placeholder: 'Select student',
+        placeholder: t('admin.hourLogs.selectStudent'),
         required: true,
       },
       {
         name: 'placementId',
-        label: 'Placement',
+        label: t('common.placement'),
         type: 'select',
         options: placementOptions,
-        placeholder: 'Select placement',
+        placeholder: t('admin.hourLogs.selectPlacement'),
         required: true,
       },
-      { name: 'date', label: 'Date', type: 'date', required: true },
+      { name: 'date', label: t('common.date'), type: 'date', required: true },
       {
         name: 'hours',
-        label: 'Hours',
+        label: t('common.hours'),
         type: 'number',
         min: '0.25',
         step: '0.25',
         required: true,
       },
-      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'description', label: t('common.description'), type: 'textarea' },
     ];
 
     if (mode === 'edit') {
       fields.push(
-        { name: 'status', label: 'Status', type: 'select', options: statusOptions, required: true },
+        { name: 'status', label: t('common.status'), type: 'select', options: statusOptions, required: true },
         {
           name: 'reviewerId',
-          label: 'Reviewed by',
+          label: t('admin.reviewedBy'),
           type: 'select',
           options: reviewerOptions,
-          placeholder: 'No reviewer',
+          placeholder: t('admin.noReviewer'),
         },
       );
     }
@@ -135,10 +140,10 @@ export default function AdminHourLogsPage() {
 
   return (
     <AdminEntityPage
-      title="Manage hour logs"
-      subtitle="View, filter, add, edit, and remove volunteer hour logs."
+      title={t('admin.hourLogs.title')}
+      subtitle={t('admin.hourLogs.subtitle')}
       entity="hour-logs"
-      entityLabel="Hour log"
+      entityLabel={t('admin.entities.hourLog')}
       loadRecords={() => apiRequest('/hour-logs')}
       columns={columns}
       getFields={getFields}

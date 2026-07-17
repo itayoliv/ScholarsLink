@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function FieldInput({ field, value, onChange }) {
   if (field.type === 'select') {
@@ -54,6 +55,7 @@ function FieldInput({ field, value, onChange }) {
 }
 
 export default function AdminRecordForm({ title, fields, initialValues, submitLabel, onSubmit, onCancel }) {
+  const { t } = useTranslation();
   const [values, setValues] = useState(initialValues);
   const resolvedFields = useMemo(
     () => (typeof fields === 'function' ? fields(values) : fields),
@@ -93,7 +95,7 @@ export default function AdminRecordForm({ title, fields, initialValues, submitLa
           ))}
           <div className="actions form-actions">
             <button type="button" className="secondary" onClick={onCancel}>
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="submit">{submitLabel}</button>
           </div>

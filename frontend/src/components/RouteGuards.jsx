@@ -1,8 +1,10 @@
 import { Navigate, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { dashboardPathForRole, useAuth } from '../auth';
 
 function AuthLoading() {
-  return <p className="status">Checking session...</p>;
+  const { t } = useTranslation();
+  return <p className="status">{t('auth.checkingSession')}</p>;
 }
 
 export function RequireAuth({ roles }) {

@@ -1,3 +1,5 @@
+import i18n from './i18n';
+
 function getApiUrl() {
   const pageHost = window.location.hostname;
 
@@ -33,7 +35,7 @@ export async function apiRequest(path, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const error = new Error(data.error || 'Request failed.');
+    const error = new Error(data.error || i18n.t('api.requestFailed'));
     error.details = data;
     throw error;
   }
@@ -53,7 +55,7 @@ export async function apiUpload(path, formData, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || 'Upload failed.');
+    throw new Error(data.error || i18n.t('api.uploadFailed'));
   }
 
   return data;

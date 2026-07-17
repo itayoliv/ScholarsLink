@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 export default function AdminFieldPicker({
   columns,
   selected,
@@ -6,6 +8,8 @@ export default function AdminFieldPicker({
   activeRole,
   onRoleChange,
 }) {
+  const { t } = useTranslation();
+
   if (!columns.length) {
     return null;
   }
@@ -14,12 +18,12 @@ export default function AdminFieldPicker({
     <section className="field-picker">
       <div className="field-picker-header">
         <div>
-          <strong>Form fields</strong>
-          <p className="muted">Choose which schema columns appear in the add/edit form.</p>
+          <strong>{t('admin.formFields')}</strong>
+          <p className="muted">{t('admin.formFieldsHelp')}</p>
         </div>
 
         {roleOptions?.length ? (
-          <div className="field-picker-roles" aria-label="User role form fields">
+          <div className="field-picker-roles" aria-label={t('admin.roleFormFields')}>
             {roleOptions.map((role) => (
               <button
                 type="button"

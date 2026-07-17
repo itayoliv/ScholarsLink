@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../api';
 import { useAuth } from '../auth';
 import Layout from '../components/Layout';
@@ -14,6 +15,7 @@ const emptyHours = {
 
 export default function StudentDashboard() {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const [summary, setSummary] = useState(null);
   const [placements, setPlacements] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
@@ -71,7 +73,7 @@ export default function StudentDashboard() {
         }),
       });
       setJoinForm(emptyJoin);
-      setMessage('Join request sent to the supervisor.');
+      setMessage(t('student.joinSent'));
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -82,7 +84,7 @@ export default function StudentDashboard() {
     event.preventDefault();
 
     if (!summary?.currentPlacement) {
-      setMessage('You need an approved placement before logging hours.');
+      setMessage(t('student.needPlacement'));
       return;
     }
 
@@ -98,7 +100,7 @@ export default function StudentDashboard() {
         }),
       });
       setHourForm(emptyHours);
-      setMessage('Hours submitted for approval.');
+      setMessage(t('student.hoursSubmitted'));
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -109,27 +111,29 @@ export default function StudentDashboard() {
 
   return (
     <Layout
-      title={`Hi, ${user.name}`}
-      subtitle="Request or change your volunteer placement, then log hours for supervisor approval."
+      title={t('student.title', { name: user.name })}
+      subtitle={t('student.subtitle')}
     >
       {message ? <p className="status">{message}</p> : null}
 
       <section className="summary-grid summary-grid-3">
         <article className="summary-card">
-          <span>Current placement</span>
+          <span>{t('student.currentPlacement')}</span>
           <strong className="summary-text">
-            {loading ? '...' : currentPlacement?.name || 'None yet'}
+            {loading ? '...' : currentPlacement?.name || t('student.noneYet')}
           </strong>
           {currentPlacement ? (
-            <small className="muted">Supervisor: {currentPlacement.supervisor?.name}</small>
+            <small className="muted">
+              {t('student.supervisorName', { name: currentPlacement.supervisor?.name })}
+            </small>
           ) : null}
         </article>
         <article className="summary-card">
-          <span>Approved hours</span>
+          <span>{t('student.approvedHours')}</span>
           <strong>{loading ? '...' : String(summary?.approvedHours ?? 0)}</strong>
         </article>
         <article className="summary-card">
-          <span>Pending requests</span>
+          <span>{t('student.pendingRequests')}</span>
           <strong>
             {loading ? '...' : String(joinRequests.filter((item) => item.status === 'PENDING').length)}
           </strong>
@@ -138,16 +142,16 @@ export default function StudentDashboard() {
 
       <section className="panel-grid panel-grid-2">
         <form className="panel" onSubmit={submitJoin}>
-          <h2>{currentPlacement ? 'Change placement' : 'Request a placement'}</h2>
+          <h2>{currentPlacement ? t('student.changePlacement') : t('student.requestPlacement')}</h2>
           <p className="muted">
-            Selecting a new location sends a join request to that site&apos;s supervisor.
+            {t('student.joinHelp')}
           </p>
           <select
             value={joinForm.placementId}
             onChange={(event) => setJoinForm({ ...joinForm, placementId: event.target.value })}
             required
           >
-            <option value="">Select placement</option>
+            <option value="">{t('student.selectPlacement')}</option>
             {placements.map((placement) => (
               <option value={placement.id} key={placement.id}>
                 {placement.name} — {placement.supervisor?.name}
@@ -155,19 +159,19 @@ export default function StudentDashboard() {
             ))}
           </select>
           <textarea
-            placeholder="Optional note to supervisor"
+            placeholder={t('student.optionalNote')}
             value={joinForm.note}
             onChange={(event) => setJoinForm({ ...joinForm, note: event.target.value })}
           />
-          <button type="submit">Send join request</button>
+          <button type="submit">{t('student.sendJoinRequest')}</button>
         </form>
 
         <form className="panel" onSubmit={submitHours}>
-          <h2>Log volunteer hours</h2>
+          <h2>{t('student.logHours')}</h2>
           <p className="muted">
             {currentPlacement
-              ? `Logging against ${currentPlacement.name}.`
-              : 'Available after your placement is approved.'}
+              ? t('student.loggingAgainst', { name: currentPlacement.name })
+              : t('student.availableAfter')}
           </p>
           <input
             type="date"
@@ -180,34 +184,34 @@ export default function StudentDashboard() {
             type="number"
             min="0.25"
             step="0.25"
-            placeholder="Hours"
+            placeholder={t('common.hours')}
             value={hourForm.hours}
             onChange={(event) => setHourForm({ ...hourForm, hours: event.target.value })}
             required
             disabled={!currentPlacement}
           />
           <textarea
-            placeholder="What did you do?"
+            placeholder={t('student.whatDidYouDo')}
             value={hourForm.description}
             onChange={(event) => setHourForm({ ...hourForm, description: event.target.value })}
             disabled={!currentPlacement}
           />
           <button type="submit" disabled={!currentPlacement}>
-            Submit hours
+            {t('student.submitHours')}
           </button>
         </form>
       </section>
 
       <section className="review-grid">
         <section className="panel">
-          <h2>My join requests</h2>
+          <h2>{t('student.myJoinRequests')}</h2>
           <div className="list">
-            {joinRequests.length === 0 ? <p className="muted">No join requests yet.</p> : null}
+            {joinRequests.length === 0 ? <p className="muted">{t('student.noJoinRequests')}</p> : null}
             {joinRequests.map((item) => (
               <article className="list-item" key={item.id}>
                 <div>
                   <strong>{item.placement.name}</strong>
-                  <span>Supervisor: {item.placement.supervisor?.name}</span>
+                  <span>{t('student.supervisorName', { name: item.placement.supervisor?.name })}</span>
                   {item.note ? <span>{item.note}</span> : null}
                 </div>
                 <StatusBadge status={item.status} />
@@ -217,22 +221,22 @@ export default function StudentDashboard() {
         </section>
 
         <section className="panel">
-          <h2>My hours</h2>
+          <h2>{t('student.myHours')}</h2>
           <div className="table-wrap">
-            {hourLogs.length === 0 ? <p className="muted">No hour logs yet.</p> : (
+            {hourLogs.length === 0 ? <p className="muted">{t('student.noHourLogs')}</p> : (
               <table>
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Placement</th>
-                    <th>Hours</th>
-                    <th>Status</th>
+                    <th>{t('common.date')}</th>
+                    <th>{t('common.placement')}</th>
+                    <th>{t('common.hours')}</th>
+                    <th>{t('common.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {hourLogs.map((item) => (
                     <tr key={item.id}>
-                      <td>{new Date(item.date).toLocaleDateString()}</td>
+                      <td>{new Date(item.date).toLocaleDateString(i18n.language)}</td>
                       <td>{item.placement.name}</td>
                       <td>{String(item.hours)}</td>
                       <td><StatusBadge status={item.status} /></td>

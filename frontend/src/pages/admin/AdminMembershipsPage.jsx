@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../../api';
 import AdminEntityPage from '../../components/AdminEntityPage';
 
-const activeOptions = [
-  { value: 'true', label: 'Active' },
-  { value: 'false', label: 'Inactive' },
-];
-
 export default function AdminMembershipsPage() {
+  const { t, i18n } = useTranslation();
   const [users, setUsers] = useState([]);
   const [placements, setPlacements] = useState([]);
 
@@ -20,6 +17,11 @@ export default function AdminMembershipsPage() {
       .catch(() => {});
   }, []);
 
+  const activeOptions = useMemo(() => [
+    { value: 'true', label: t('common.active') },
+    { value: 'false', label: t('common.inactive') },
+  ], [t]);
+
   const studentOptions = useMemo(
     () => users.map((user) => ({ value: String(user.id), label: user.name })),
     [users],
@@ -31,23 +33,23 @@ export default function AdminMembershipsPage() {
   );
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'ID' },
+    { key: 'id', label: t('common.id') },
     {
       key: 'studentId',
-      label: 'Student',
+      label: t('common.student'),
       render: (record) => record.student?.name || '—',
       filter: { type: 'select', options: studentOptions },
     },
     {
       key: 'placementId',
-      label: 'Placement',
+      label: t('common.placement'),
       render: (record) => record.placement?.name || '—',
       filter: { type: 'select', options: placementOptions },
     },
     {
       key: 'active',
-      label: 'Active',
-      render: (record) => (record.active ? 'Yes' : 'No'),
+      label: t('common.active'),
+      render: (record) => (record.active ? t('common.yes') : t('common.no')),
       filter: {
         type: 'select',
         options: activeOptions,
@@ -56,42 +58,42 @@ export default function AdminMembershipsPage() {
     },
     {
       key: 'startedAt',
-      label: 'Started',
-      render: (record) => new Date(record.startedAt).toLocaleDateString(),
+      label: t('admin.memberships.started'),
+      render: (record) => new Date(record.startedAt).toLocaleDateString(i18n.language),
     },
     {
       key: 'endedAt',
-      label: 'Ended',
-      render: (record) => (record.endedAt ? new Date(record.endedAt).toLocaleDateString() : '—'),
+      label: t('admin.memberships.ended'),
+      render: (record) => (record.endedAt ? new Date(record.endedAt).toLocaleDateString(i18n.language) : '—'),
     },
-  ], [studentOptions, placementOptions]);
+  ], [t, i18n.language, studentOptions, placementOptions, activeOptions]);
 
   function getFields() {
     return [
       {
         name: 'studentId',
-        label: 'Student',
+        label: t('common.student'),
         type: 'select',
         options: studentOptions,
-        placeholder: 'Select student',
+        placeholder: t('admin.memberships.selectStudent'),
         required: true,
       },
       {
         name: 'placementId',
-        label: 'Placement',
+        label: t('common.placement'),
         type: 'select',
         options: placementOptions,
-        placeholder: 'Select placement',
+        placeholder: t('admin.memberships.selectPlacement'),
         required: true,
       },
       {
         name: 'active',
-        label: 'Active',
+        label: t('common.active'),
         type: 'checkbox',
-        hint: 'Activating deactivates the student\'s other active membership.',
+        hint: t('admin.memberships.activeHint'),
       },
-      { name: 'startedAt', label: 'Started at', type: 'date' },
-      { name: 'endedAt', label: 'Ended at', type: 'date' },
+      { name: 'startedAt', label: t('admin.memberships.startedAt'), type: 'date' },
+      { name: 'endedAt', label: t('admin.memberships.endedAt'), type: 'date' },
     ];
   }
 
@@ -113,10 +115,10 @@ export default function AdminMembershipsPage() {
 
   return (
     <AdminEntityPage
-      title="Manage memberships"
-      subtitle="View, filter, add, edit, and remove placement memberships."
+      title={t('admin.memberships.title')}
+      subtitle={t('admin.memberships.subtitle')}
       entity="memberships"
-      entityLabel="Membership"
+      entityLabel={t('admin.entities.membership')}
       loadRecords={() => apiRequest('/memberships')}
       columns={columns}
       getFields={getFields}

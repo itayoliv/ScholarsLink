@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../api';
 import { useAuth } from '../auth';
 import Layout from '../components/Layout';
@@ -6,6 +7,7 @@ import StatusBadge from '../components/StatusBadge';
 
 export default function SupervisorDashboard() {
   const { user } = useAuth();
+  const { t, i18n } = useTranslation();
   const [placements, setPlacements] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
   const [hourLogs, setHourLogs] = useState([]);
@@ -43,7 +45,7 @@ export default function SupervisorDashboard() {
         method: 'PATCH',
         body: JSON.stringify({ status, reviewerId: user.id }),
       });
-      setMessage(`Marked as ${status.toLowerCase()}.`);
+      setMessage(t('supervisor.markedAs', { status: t(`status.${status}`) }));
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -82,48 +84,53 @@ export default function SupervisorDashboard() {
 
   return (
     <Layout
-      title={`Supervisor desk — ${user.name}`}
-      subtitle="Approve join requests and verify volunteer hours whenever you are ready."
+      title={t('supervisor.title', { name: user.name })}
+      subtitle={t('supervisor.subtitle')}
     >
       {message ? <p className="status">{message}</p> : null}
 
       <section className="summary-grid summary-grid-3">
         <article className="summary-card">
-          <span>My placements</span>
+          <span>{t('supervisor.myPlacements')}</span>
           <strong>{loading ? '...' : String(placements.length)}</strong>
         </article>
         <article className="summary-card">
-          <span>Pending joins</span>
+          <span>{t('supervisor.pendingJoins')}</span>
           <strong>{loading ? '...' : String(pendingJoins.length)}</strong>
         </article>
         <article className="summary-card">
-          <span>Pending hours</span>
+          <span>{t('supervisor.pendingHours')}</span>
           <strong>{loading ? '...' : String(pendingHours.length)}</strong>
         </article>
       </section>
 
       <section className="review-grid">
         <section className="panel">
-          <h2>Join approvals</h2>
+          <h2>{t('supervisor.joinApprovals')}</h2>
           <div className="list">
-            {pendingJoins.length === 0 ? <p className="muted">No pending join requests.</p> : null}
+            {pendingJoins.length === 0 ? <p className="muted">{t('supervisor.noPendingJoins')}</p> : null}
             {pendingJoins.map((item) => (
               <article className="list-item" key={item.id}>
                 <div>
-                  <strong>{item.student.name} wants to join {item.placement.name}</strong>
-                  <span>{item.note || 'No note provided.'}</span>
+                  <strong>
+                    {t('supervisor.wantsToJoin', {
+                      student: item.student.name,
+                      placement: item.placement.name,
+                    })}
+                  </strong>
+                  <span>{item.note || t('supervisor.noNote')}</span>
                   <StatusBadge status={item.status} />
                 </div>
                 <div className="actions">
                   <button type="button" onClick={() => review(`/join-requests/${item.id}`, 'APPROVED')}>
-                    Approve
+                    {t('supervisor.approve')}
                   </button>
                   <button
                     type="button"
                     className="secondary"
                     onClick={() => review(`/join-requests/${item.id}`, 'REJECTED')}
                   >
-                    Reject
+                    {t('supervisor.reject')}
                   </button>
                 </div>
               </article>
@@ -132,30 +139,34 @@ export default function SupervisorDashboard() {
         </section>
 
         <section className="panel">
-          <h2>Hours approvals</h2>
+          <h2>{t('supervisor.hoursApprovals')}</h2>
           <div className="list">
-            {pendingHours.length === 0 ? <p className="muted">No pending hour logs.</p> : null}
+            {pendingHours.length === 0 ? <p className="muted">{t('supervisor.noPendingHours')}</p> : null}
             {pendingHours.map((item) => (
               <article className="list-item" key={item.id}>
                 <div>
                   <strong>
-                    {item.student.name} logged {String(item.hours)} hours at {item.placement.name}
+                    {t('supervisor.loggedHours', {
+                      student: item.student.name,
+                      hours: String(item.hours),
+                      placement: item.placement.name,
+                    })}
                   </strong>
                   <span>
-                    {new Date(item.date).toLocaleDateString()} — {item.description || 'No details'}
+                    {new Date(item.date).toLocaleDateString(i18n.language)} — {item.description || t('supervisor.noDetails')}
                   </span>
                   <StatusBadge status={item.status} />
                 </div>
                 <div className="actions">
                   <button type="button" onClick={() => review(`/hour-logs/${item.id}`, 'APPROVED')}>
-                    Approve
+                    {t('supervisor.approve')}
                   </button>
                   <button
                     type="button"
                     className="secondary"
                     onClick={() => review(`/hour-logs/${item.id}`, 'REJECTED')}
                   >
-                    Reject
+                    {t('supervisor.reject')}
                   </button>
                 </div>
               </article>
@@ -165,16 +176,16 @@ export default function SupervisorDashboard() {
       </section>
 
       <section className="panel" style={{ marginTop: 16 }}>
-        <h2>My students</h2>
+        <h2>{t('supervisor.myStudents')}</h2>
         <div className="table-wrap">
-          {students.length === 0 ? <p className="muted">No active students yet.</p> : (
+          {students.length === 0 ? <p className="muted">{t('supervisor.noActiveStudents')}</p> : (
             <table>
               <thead>
                 <tr>
-                  <th>Student</th>
-                  <th>Email</th>
-                  <th>Placement</th>
-                  <th>Approved hours</th>
+                  <th>{t('common.student')}</th>
+                  <th>{t('common.email')}</th>
+                  <th>{t('common.placement')}</th>
+                  <th>{t('supervisor.approvedHours')}</th>
                 </tr>
               </thead>
               <tbody>

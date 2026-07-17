@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { apiRequest } from '../api';
 import Layout from './Layout';
 import AdminNav from './AdminNav';
@@ -6,17 +8,24 @@ import AdminDataTable from './AdminDataTable';
 import AdminFieldPicker from './AdminFieldPicker';
 import AdminRecordForm from './AdminRecordForm';
 
-function labelize(value) {
+function autoLabel(value) {
   return String(value)
     .replace(/Id$/, '')
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/^./, (letter) => letter.toUpperCase());
 }
 
+// Translates known column names / enum values, falling back to the English auto-label.
+function labelize(value) {
+  return i18n.t(`admin.columns.${value}`, { defaultValue: autoLabel(value) });
+}
+
 function enumOptions(columnType) {
   return Array.from(String(columnType || '').matchAll(/'([^']*)'/g)).map((match) => ({
     value: match[1],
-    label: labelize(match[1].toLowerCase()),
+    label: i18n.t(`admin.values.${match[1].toLowerCase()}`, {
+      defaultValue: autoLabel(match[1].toLowerCase()),
+    }),
   }));
 }
 
@@ -41,13 +50,13 @@ function formatCellValue(value, column) {
     return '—';
   }
 
-  if (column.dataType === 'tinyint' && String(column.columnType).startsWith('tinyint(1)')) {
-    return value ? 'Yes' : 'No';
+  if (typeof value === 'boolean' || (column.dataType === 'tinyint' && String(column.columnType).startsWith('tinyint(1)'))) {
+    return value ? i18n.t('common.yes') : i18n.t('common.no');
   }
 
   if (['date', 'datetime', 'timestamp'].includes(column.dataType)) {
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString();
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString(i18n.language);
   }
 
   return String(value);
@@ -64,7 +73,7 @@ function fieldFromColumn(column) {
       label: labelize(column.name),
       type: 'select',
       options,
-      placeholder: column.nullable ? 'No value' : undefined,
+      placeholder: column.nullable ? i18n.t('admin.noValue') : undefined,
       required: !column.nullable && column.defaultValue === null,
     };
   }
@@ -107,6 +116,7 @@ export default function AdminEntityPage({
   onDelete,
   fieldPickerRoles,
 }) {
+  const { t, i18n: i18nInstance } = useTranslation();
   const [records, setRecords] = useState([]);
   const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -139,7 +149,7 @@ export default function AdminEntityPage({
     () => writableSchemaColumns
       .filter((column) => !baseFieldNames.has(column.name))
       .map((column) => ({ ...column, label: labelize(column.name) })),
-    [writableSchemaColumns, baseFieldNames],
+    [writableSchemaColumns, baseFieldNames, i18nInstance.language],
   );
 
   function storageKey(context) {
@@ -222,7 +232,7 @@ export default function AdminEntityPage({
       }));
 
     return [...columns, ...dynamicColumns];
-  }, [columns, visibleSchemaColumns]);
+  }, [columns, visibleSchemaColumns, i18nInstance.language]);
 
   const filterableColumns = tableColumns.filter((column) => column.filter);
 
@@ -250,10 +260,10 @@ export default function AdminEntityPage({
     try {
       if (editing.mode === 'edit') {
         await onUpdate(editing.record, values);
-        setMessage(`${entityLabel} updated.`);
+        setMessage(t('admin.updated', { entity: entityLabel }));
       } else {
         await onCreate(values);
-        setMessage(`${entityLabel} created.`);
+        setMessage(t('admin.createdMsg', { entity: entityLabel }));
       }
 
       setEditing(null);
@@ -264,13 +274,13 @@ export default function AdminEntityPage({
   }
 
   async function handleDelete(record) {
-    if (!window.confirm(`Delete this ${entityLabel.toLowerCase()} (#${record.id})? This cannot be undone.`)) {
+    if (!window.confirm(t('admin.confirmDelete', { entity: entityLabel.toLowerCase(), id: record.id }))) {
       return;
     }
 
     try {
       await onDelete(record);
-      setMessage(`${entityLabel} deleted.`);
+      setMessage(t('admin.deletedMsg', { entity: entityLabel }));
       await refresh();
     } catch (error) {
       setMessage(error.message);
@@ -292,8 +302,8 @@ export default function AdminEntityPage({
 
       await refresh();
       setMessage(data.warning
-        ? `Schema refreshed from the database. ${data.warning}`
-        : 'Schema refreshed from the database.');
+        ? `${t('admin.schemaRefreshed')} ${data.warning}`
+        : t('admin.schemaRefreshed'));
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -344,7 +354,7 @@ export default function AdminEntityPage({
                   value={filters[column.key] ?? ''}
                   onChange={(event) => setFilters({ ...filters, [column.key]: event.target.value })}
                 >
-                  <option value="">All: {column.label.toLowerCase()}</option>
+                  <option value="">{t('admin.allFilter', { label: column.label })}</option>
                   {(column.filter.options || []).map((option) => (
                     <option key={option.value} value={option.value}>
                       {option.label}
@@ -354,7 +364,7 @@ export default function AdminEntityPage({
               ) : (
                 <input
                   key={column.key}
-                  placeholder={`Filter by ${column.label.toLowerCase()}`}
+                  placeholder={t('admin.filterBy', { label: column.label })}
                   value={filters[column.key] ?? ''}
                   onChange={(event) => setFilters({ ...filters, [column.key]: event.target.value })}
                 />
@@ -362,7 +372,7 @@ export default function AdminEntityPage({
             ))}
             {filterableColumns.length > 0 ? (
               <button type="button" className="secondary small" onClick={() => setFilters({})}>
-                Clear filters
+                {t('admin.clearFilters')}
               </button>
             ) : null}
           </div>
@@ -370,20 +380,22 @@ export default function AdminEntityPage({
           <div className="admin-toolbar-actions">
             {entity ? (
               <button type="button" className="secondary" onClick={refreshSchema} disabled={schemaLoading}>
-                {schemaLoading ? 'Refreshing schema...' : 'Refresh schema'}
+                {schemaLoading ? t('admin.refreshingSchema') : t('admin.refreshSchema')}
               </button>
             ) : null}
             <button type="button" className="secondary" onClick={refresh} disabled={loading}>
-              {loading ? 'Loading...' : 'Refresh'}
+              {loading ? t('common.loading') : t('common.refresh')}
             </button>
             <button type="button" onClick={() => setEditing({ mode: 'create' })}>
-              Add {entityLabel.toLowerCase()}
+              {t('admin.add', { entity: entityLabel.toLowerCase() })}
             </button>
           </div>
         </div>
 
         <p className="muted admin-count">
-          {loading ? 'Loading records...' : `Showing ${filteredRecords.length} of ${records.length} records`}
+          {loading
+            ? t('admin.loadingRecords')
+            : t('admin.showing', { shown: filteredRecords.length, total: records.length })}
         </p>
 
         <AdminFieldPicker
@@ -408,11 +420,11 @@ export default function AdminEntityPage({
         <AdminRecordForm
           key={editing.mode === 'edit' ? `edit-${editing.record.id}` : 'create'}
           title={editing.mode === 'edit'
-            ? `Edit ${entityLabel.toLowerCase()} #${editing.record.id}`
-            : `Add ${entityLabel.toLowerCase()}`}
+            ? t('admin.editRecord', { entity: entityLabel.toLowerCase(), id: editing.record.id })
+            : t('admin.add', { entity: entityLabel.toLowerCase() })}
           fields={fieldsFor(editing.mode, editing.record)}
           initialValues={valuesFor(editing.record)}
-          submitLabel={editing.mode === 'edit' ? 'Save changes' : 'Create'}
+          submitLabel={editing.mode === 'edit' ? t('admin.saveChanges') : t('admin.create')}
           onSubmit={handleSubmit}
           onCancel={() => setEditing(null)}
         />

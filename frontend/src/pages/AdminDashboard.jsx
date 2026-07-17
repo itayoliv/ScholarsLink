@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../api';
 import AdminNav from '../components/AdminNav';
 import Layout from '../components/Layout';
@@ -19,6 +20,7 @@ const emptyPlacement = {
 };
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const [summary, setSummary] = useState(null);
   const [users, setUsers] = useState([]);
   const [placements, setPlacements] = useState([]);
@@ -69,7 +71,7 @@ export default function AdminDashboard() {
         body: JSON.stringify(userForm),
       });
       setUserForm(emptyUser);
-      setMessage('Account created.');
+      setMessage(t('adminDash.accountCreated'));
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -85,7 +87,7 @@ export default function AdminDashboard() {
         body: JSON.stringify(placementForm),
       });
       setPlacementForm(emptyPlacement);
-      setMessage('Placement created.');
+      setMessage(t('adminDash.placementCreated'));
       await loadData();
     } catch (error) {
       setMessage(error.message);
@@ -94,8 +96,8 @@ export default function AdminDashboard() {
 
   return (
     <Layout
-      title="Admin overview"
-      subtitle="Monitor users, placements, join requests, and volunteer hours across the system."
+      title={t('adminDash.title')}
+      subtitle={t('adminDash.subtitle')}
     >
       <AdminNav />
 
@@ -103,12 +105,12 @@ export default function AdminDashboard() {
 
       <section className="summary-grid">
         {[
-          ['Students', summary?.students ?? 0],
-          ['Supervisors', summary?.supervisors ?? 0],
-          ['Placements', summary?.placements ?? 0],
-          ['Pending joins', summary?.pendingJoinRequests ?? 0],
-          ['Pending hours', summary?.pendingHourLogs ?? 0],
-          ['Approved hours', summary?.approvedHours ?? 0],
+          [t('adminDash.students'), summary?.students ?? 0],
+          [t('adminDash.supervisors'), summary?.supervisors ?? 0],
+          [t('adminDash.placements'), summary?.placements ?? 0],
+          [t('adminDash.pendingJoins'), summary?.pendingJoinRequests ?? 0],
+          [t('adminDash.pendingHours'), summary?.pendingHourLogs ?? 0],
+          [t('adminDash.approvedHours'), summary?.approvedHours ?? 0],
         ].map(([label, value]) => (
           <article className="summary-card" key={label}>
             <span>{label}</span>
@@ -119,29 +121,29 @@ export default function AdminDashboard() {
 
       <section className="panel-grid panel-grid-2">
         <form className="panel" onSubmit={createUser}>
-          <h2>Create account</h2>
+          <h2>{t('adminDash.createAccount')}</h2>
           <input
-            placeholder="Full name"
+            placeholder={t('common.fullName')}
             value={userForm.name}
             onChange={(event) => setUserForm({ ...userForm, name: event.target.value })}
             required
           />
           <input
             type="email"
-            placeholder="Email"
+            placeholder={t('common.email')}
             value={userForm.email}
             onChange={(event) => setUserForm({ ...userForm, email: event.target.value })}
             required
           />
           <input
             type="tel"
-            placeholder="Phone"
+            placeholder={t('common.phone')}
             value={userForm.phone}
             onChange={(event) => setUserForm({ ...userForm, phone: event.target.value })}
           />
           <input
             type="password"
-            placeholder="Password (min 6 characters)"
+            placeholder={t('common.passwordMin')}
             value={userForm.password}
             onChange={(event) => setUserForm({ ...userForm, password: event.target.value })}
             required
@@ -151,23 +153,23 @@ export default function AdminDashboard() {
             value={userForm.role}
             onChange={(event) => setUserForm({ ...userForm, role: event.target.value })}
           >
-            <option value="STUDENT">Scholarship student</option>
-            <option value="SUPERVISOR">Volunteer supervisor</option>
-            <option value="ADMIN">Administrator</option>
+            <option value="STUDENT">{t('roles.STUDENT')}</option>
+            <option value="SUPERVISOR">{t('roles.SUPERVISOR')}</option>
+            <option value="ADMIN">{t('roles.ADMIN')}</option>
           </select>
-          <button type="submit">Create account</button>
+          <button type="submit">{t('adminDash.createAccount')}</button>
         </form>
 
         <form className="panel" onSubmit={createPlacement}>
-          <h2>Create placement</h2>
+          <h2>{t('adminDash.createPlacement')}</h2>
           <input
-            placeholder="Volunteer location"
+            placeholder={t('adminDash.volunteerLocation')}
             value={placementForm.name}
             onChange={(event) => setPlacementForm({ ...placementForm, name: event.target.value })}
             required
           />
           <textarea
-            placeholder="Short description"
+            placeholder={t('adminDash.shortDescription')}
             value={placementForm.description}
             onChange={(event) => setPlacementForm({ ...placementForm, description: event.target.value })}
           />
@@ -176,27 +178,27 @@ export default function AdminDashboard() {
             onChange={(event) => setPlacementForm({ ...placementForm, supervisorId: event.target.value })}
             required
           >
-            <option value="">Select supervisor</option>
+            <option value="">{t('adminDash.selectSupervisor')}</option>
             {supervisors.map((supervisor) => (
               <option value={supervisor.id} key={supervisor.id}>
                 {supervisor.name}
               </option>
             ))}
           </select>
-          <button type="submit">Create placement</button>
+          <button type="submit">{t('adminDash.createPlacement')}</button>
         </form>
       </section>
 
       <section className="review-grid" style={{ marginTop: 16 }}>
         <section className="panel">
-          <h2>Users</h2>
+          <h2>{t('adminDash.users')}</h2>
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
+                  <th>{t('common.name')}</th>
+                  <th>{t('common.email')}</th>
+                  <th>{t('common.role')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -204,7 +206,7 @@ export default function AdminDashboard() {
                   <tr key={item.id}>
                     <td>{item.name}</td>
                     <td>{item.email}</td>
-                    <td>{item.role}</td>
+                    <td>{t(`rolesShort.${item.role}`, { defaultValue: item.role })}</td>
                   </tr>
                 ))}
               </tbody>
@@ -213,14 +215,14 @@ export default function AdminDashboard() {
         </section>
 
         <section className="panel">
-          <h2>Placements</h2>
+          <h2>{t('adminDash.placements')}</h2>
           <div className="table-wrap">
             <table>
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Supervisor</th>
-                  <th>Active students</th>
+                  <th>{t('common.name')}</th>
+                  <th>{t('common.supervisor')}</th>
+                  <th>{t('adminDash.activeStudents')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -239,14 +241,14 @@ export default function AdminDashboard() {
 
       <section className="review-grid" style={{ marginTop: 16 }}>
         <section className="panel">
-          <h2>Join requests</h2>
+          <h2>{t('adminDash.joinRequests')}</h2>
           <div className="list">
-            {joinRequests.length === 0 ? <p className="muted">No join requests.</p> : null}
+            {joinRequests.length === 0 ? <p className="muted">{t('adminDash.noJoinRequests')}</p> : null}
             {joinRequests.map((item) => (
               <article className="list-item" key={item.id}>
                 <div>
                   <strong>{item.student.name} → {item.placement.name}</strong>
-                  <span>Supervisor: {item.placement.supervisor?.name}</span>
+                  <span>{t('adminDash.supervisorName', { name: item.placement.supervisor?.name })}</span>
                 </div>
                 <StatusBadge status={item.status} />
               </article>
@@ -255,16 +257,16 @@ export default function AdminDashboard() {
         </section>
 
         <section className="panel">
-          <h2>Hour logs</h2>
+          <h2>{t('adminDash.hourLogs')}</h2>
           <div className="table-wrap">
-            {hourLogs.length === 0 ? <p className="muted">No hour logs.</p> : (
+            {hourLogs.length === 0 ? <p className="muted">{t('adminDash.noHourLogs')}</p> : (
               <table>
                 <thead>
                   <tr>
-                    <th>Student</th>
-                    <th>Placement</th>
-                    <th>Hours</th>
-                    <th>Status</th>
+                    <th>{t('common.student')}</th>
+                    <th>{t('common.placement')}</th>
+                    <th>{t('common.hours')}</th>
+                    <th>{t('common.status')}</th>
                   </tr>
                 </thead>
                 <tbody>

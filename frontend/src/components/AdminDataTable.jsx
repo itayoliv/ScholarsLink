@@ -1,4 +1,8 @@
+import { useTranslation } from 'react-i18next';
+
 export default function AdminDataTable({ columns, records, loading, onEdit, onDelete }) {
+  const { t } = useTranslation();
+
   return (
     <div className="table-wrap">
       <table className="admin-table">
@@ -7,14 +11,14 @@ export default function AdminDataTable({ columns, records, loading, onEdit, onDe
             {columns.map((column) => (
               <th key={column.key}>{column.label}</th>
             ))}
-            <th>Actions</th>
+            <th>{t('common.actions')}</th>
           </tr>
         </thead>
         <tbody>
           {records.length === 0 ? (
             <tr>
               <td colSpan={columns.length + 1} className="muted">
-                {loading ? 'Loading...' : 'No records found.'}
+                {loading ? t('common.loading') : t('admin.noRecords')}
               </td>
             </tr>
           ) : (
@@ -28,10 +32,10 @@ export default function AdminDataTable({ columns, records, loading, onEdit, onDe
                 <td>
                   <div className="row-actions">
                     <button type="button" className="small secondary" onClick={() => onEdit(record)}>
-                      Edit
+                      {t('common.edit')}
                     </button>
                     <button type="button" className="small danger" onClick={() => onDelete(record)}>
-                      Delete
+                      {t('common.delete')}
                     </button>
                   </div>
                 </td>

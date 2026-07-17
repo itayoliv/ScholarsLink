@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import Layout from '../components/Layout';
 import { apiRequest } from '../api';
 import { dashboardPathForRole, useAuth } from '../auth';
@@ -15,6 +16,7 @@ const emptyRegister = {
 export default function LoginPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [mode, setMode] = useState('login');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -74,8 +76,8 @@ export default function LoginPage() {
 
   return (
     <Layout
-      title="Welcome to ScholarsLink"
-      subtitle="Track scholarship volunteer hours with a simple approval workflow between students, supervisors, and admins."
+      title={t('login.title')}
+      subtitle={t('login.subtitle')}
     >
       <div className="auth-grid">
         <section className="panel">
@@ -85,21 +87,20 @@ export default function LoginPage() {
               className={mode === 'login' ? '' : 'secondary'}
               onClick={() => setMode('login')}
             >
-              Log in
+              {t('login.loginTab')}
             </button>
             <button
               type="button"
               className={mode === 'register' ? '' : 'secondary'}
               onClick={() => setMode('register')}
             >
-              Create account
+              {t('login.registerTab')}
             </button>
           </div>
 
           {demoMode ? (
             <p className="status">
-              Demo mode - Try adm@gmail.com / sup@gmail.com / stu1@gmail.com / stu2@gmail.com with
-              password 123456
+              {t('login.demoNotice')}
             </p>
           ) : null}
 
@@ -107,50 +108,50 @@ export default function LoginPage() {
 
           {mode === 'login' ? (
             <form onSubmit={handleLogin}>
-              <h2>Log in</h2>
+              <h2>{t('login.loginHeading')}</h2>
               <input
                 type="email"
-                placeholder="Email"
+                placeholder={t('common.email')}
                 value={loginForm.email}
                 onChange={(event) => setLoginForm({ ...loginForm, email: event.target.value })}
                 required
               />
               <input
                 type="password"
-                placeholder="Password"
+                placeholder={t('common.password')}
                 value={loginForm.password}
                 onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })}
                 required
               />
               <button type="submit" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? t('login.signingIn') : t('login.signIn')}
               </button>
             </form>
           ) : (
             <form onSubmit={handleRegister}>
-              <h2>Create account</h2>
+              <h2>{t('login.registerHeading')}</h2>
               <input
-                placeholder="Full name"
+                placeholder={t('common.fullName')}
                 value={registerForm.name}
                 onChange={(event) => setRegisterForm({ ...registerForm, name: event.target.value })}
                 required
               />
               <input
                 type="email"
-                placeholder="Email"
+                placeholder={t('common.email')}
                 value={registerForm.email}
                 onChange={(event) => setRegisterForm({ ...registerForm, email: event.target.value })}
                 required
               />
               <input
                 type="tel"
-                placeholder="Phone"
+                placeholder={t('common.phone')}
                 value={registerForm.phone}
                 onChange={(event) => setRegisterForm({ ...registerForm, phone: event.target.value })}
               />
               <input
                 type="password"
-                placeholder="Password (min 6 characters)"
+                placeholder={t('common.passwordMin')}
                 value={registerForm.password}
                 onChange={(event) => setRegisterForm({ ...registerForm, password: event.target.value })}
                 required
@@ -160,24 +161,24 @@ export default function LoginPage() {
                 value={registerForm.role}
                 onChange={(event) => setRegisterForm({ ...registerForm, role: event.target.value })}
               >
-                <option value="STUDENT">Scholarship student</option>
-                <option value="SUPERVISOR">Volunteer supervisor</option>
-                <option value="ADMIN">Administrator</option>
+                <option value="STUDENT">{t('roles.STUDENT')}</option>
+                <option value="SUPERVISOR">{t('roles.SUPERVISOR')}</option>
+                <option value="ADMIN">{t('roles.ADMIN')}</option>
               </select>
               <button type="submit" disabled={loading}>
-                {loading ? 'Creating...' : 'Create account'}
+                {loading ? t('login.creating') : t('login.createAccount')}
               </button>
             </form>
           )}
         </section>
 
         <section className="panel info-panel">
-          <h2>How it works</h2>
+          <h2>{t('login.howItWorks')}</h2>
           <ul className="plain-list">
-            <li>Students request a volunteer placement and log hours.</li>
-            <li>Supervisors approve join requests and verify submitted hours.</li>
-            <li>Admins oversee users, placements, and the full hours picture.</li>
-            <li>Students can switch placements during the year when needed.</li>
+            <li>{t('login.bullet1')}</li>
+            <li>{t('login.bullet2')}</li>
+            <li>{t('login.bullet3')}</li>
+            <li>{t('login.bullet4')}</li>
           </ul>
         </section>
       </div>

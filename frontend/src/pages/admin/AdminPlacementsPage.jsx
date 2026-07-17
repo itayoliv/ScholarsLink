@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../../api';
 import AdminEntityPage from '../../components/AdminEntityPage';
 
 export default function AdminPlacementsPage() {
+  const { t } = useTranslation();
   const [supervisors, setSupervisors] = useState([]);
 
   useEffect(() => {
@@ -17,36 +19,36 @@ export default function AdminPlacementsPage() {
   );
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'ID' },
-    { key: 'name', label: 'Name', filter: { type: 'text' } },
+    { key: 'id', label: t('common.id') },
+    { key: 'name', label: t('common.name'), filter: { type: 'text' } },
     {
       key: 'description',
-      label: 'Description',
+      label: t('common.description'),
       render: (record) => record.description || '—',
     },
     {
       key: 'supervisorId',
-      label: 'Supervisor',
+      label: t('common.supervisor'),
       render: (record) => record.supervisor?.name || '—',
       filter: { type: 'select', options: supervisorOptions },
     },
     {
       key: 'students',
-      label: 'Active students',
+      label: t('admin.placements.activeStudents'),
       render: (record) => String(record.memberships?.length ?? 0),
     },
-  ], [supervisorOptions]);
+  ], [t, supervisorOptions]);
 
   function getFields() {
     return [
-      { name: 'name', label: 'Volunteer location', type: 'text', required: true },
-      { name: 'description', label: 'Description', type: 'textarea' },
+      { name: 'name', label: t('admin.placements.volunteerLocation'), type: 'text', required: true },
+      { name: 'description', label: t('common.description'), type: 'textarea' },
       {
         name: 'supervisorId',
-        label: 'Supervisor',
+        label: t('common.supervisor'),
         type: 'select',
         options: supervisorOptions,
-        placeholder: 'Select supervisor',
+        placeholder: t('admin.placements.selectSupervisor'),
         required: true,
       },
     ];
@@ -54,10 +56,10 @@ export default function AdminPlacementsPage() {
 
   return (
     <AdminEntityPage
-      title="Manage placements"
-      subtitle="View, filter, add, edit, and remove volunteer placements."
+      title={t('admin.placements.title')}
+      subtitle={t('admin.placements.subtitle')}
       entity="placements"
-      entityLabel="Placement"
+      entityLabel={t('admin.entities.placement')}
       loadRecords={() => apiRequest('/placements')}
       columns={columns}
       getFields={getFields}

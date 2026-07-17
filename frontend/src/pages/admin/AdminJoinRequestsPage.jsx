@@ -1,15 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../../api';
 import AdminEntityPage from '../../components/AdminEntityPage';
 import StatusBadge from '../../components/StatusBadge';
 
-const statusOptions = [
-  { value: 'PENDING', label: 'Pending' },
-  { value: 'APPROVED', label: 'Approved' },
-  { value: 'REJECTED', label: 'Rejected' },
-];
-
 export default function AdminJoinRequestsPage() {
+  const { t, i18n } = useTranslation();
   const [users, setUsers] = useState([]);
   const [placements, setPlacements] = useState([]);
 
@@ -22,6 +18,12 @@ export default function AdminJoinRequestsPage() {
       .catch(() => {});
   }, []);
 
+  const statusOptions = useMemo(() => [
+    { value: 'PENDING', label: t('status.PENDING') },
+    { value: 'APPROVED', label: t('status.APPROVED') },
+    { value: 'REJECTED', label: t('status.REJECTED') },
+  ], [t]);
+
   const studentOptions = useMemo(
     () => users
       .filter((user) => user.role === 'STUDENT')
@@ -32,8 +34,11 @@ export default function AdminJoinRequestsPage() {
   const reviewerOptions = useMemo(
     () => users
       .filter((user) => user.role !== 'STUDENT')
-      .map((user) => ({ value: String(user.id), label: `${user.name} (${user.role})` })),
-    [users],
+      .map((user) => ({
+        value: String(user.id),
+        label: `${user.name} (${t(`rolesShort.${user.role}`, { defaultValue: user.role })})`,
+      })),
+    [users, t],
   );
 
   const placementOptions = useMemo(
@@ -42,73 +47,73 @@ export default function AdminJoinRequestsPage() {
   );
 
   const columns = useMemo(() => [
-    { key: 'id', label: 'ID' },
+    { key: 'id', label: t('common.id') },
     {
       key: 'studentId',
-      label: 'Student',
+      label: t('common.student'),
       render: (record) => record.student?.name || '—',
       filter: { type: 'select', options: studentOptions },
     },
     {
       key: 'placementId',
-      label: 'Placement',
+      label: t('common.placement'),
       render: (record) => record.placement?.name || '—',
       filter: { type: 'select', options: placementOptions },
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('common.status'),
       render: (record) => <StatusBadge status={record.status} />,
       filter: { type: 'select', options: statusOptions },
     },
     {
       key: 'note',
-      label: 'Note',
+      label: t('common.note'),
       render: (record) => record.note || '—',
     },
     {
       key: 'reviewedById',
-      label: 'Reviewed by',
+      label: t('admin.reviewedBy'),
       render: (record) => record.reviewedBy?.name || '—',
     },
     {
       key: 'createdAt',
-      label: 'Created',
-      render: (record) => new Date(record.createdAt).toLocaleDateString(),
+      label: t('common.created'),
+      render: (record) => new Date(record.createdAt).toLocaleDateString(i18n.language),
     },
-  ], [studentOptions, placementOptions]);
+  ], [t, i18n.language, studentOptions, placementOptions, statusOptions]);
 
   function getFields(mode) {
     const fields = [
       {
         name: 'studentId',
-        label: 'Student',
+        label: t('common.student'),
         type: 'select',
         options: studentOptions,
-        placeholder: 'Select student',
+        placeholder: t('admin.joinRequests.selectStudent'),
         required: true,
       },
       {
         name: 'placementId',
-        label: 'Placement',
+        label: t('common.placement'),
         type: 'select',
         options: placementOptions,
-        placeholder: 'Select placement',
+        placeholder: t('admin.joinRequests.selectPlacement'),
         required: true,
       },
-      { name: 'note', label: 'Note', type: 'textarea' },
+      { name: 'note', label: t('common.note'), type: 'textarea' },
     ];
 
     if (mode === 'edit') {
       fields.push(
-        { name: 'status', label: 'Status', type: 'select', options: statusOptions, required: true },
+        { name: 'status', label: t('common.status'), type: 'select', options: statusOptions, required: true },
         {
           name: 'reviewerId',
-          label: 'Reviewed by',
+          label: t('admin.reviewedBy'),
           type: 'select',
           options: reviewerOptions,
-          placeholder: 'No reviewer',
-          hint: 'Setting status to approved activates the placement for the student.',
+          placeholder: t('admin.noReviewer'),
+          hint: t('admin.joinRequests.statusHint'),
         },
       );
     }
@@ -118,10 +123,10 @@ export default function AdminJoinRequestsPage() {
 
   return (
     <AdminEntityPage
-      title="Manage join requests"
-      subtitle="View, filter, add, edit, and remove placement join requests."
+      title={t('admin.joinRequests.title')}
+      subtitle={t('admin.joinRequests.subtitle')}
       entity="join-requests"
-      entityLabel="Join request"
+      entityLabel={t('admin.entities.joinRequest')}
       loadRecords={() => apiRequest('/join-requests')}
       columns={columns}
       getFields={getFields}

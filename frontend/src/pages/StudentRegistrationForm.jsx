@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { apiRequest, apiUpload } from '../api';
 import { useAuth } from '../auth';
 import Layout from '../components/Layout';
@@ -39,15 +40,15 @@ const emptyForm = {
 };
 
 const fileSlots = [
-  { type: 'CV', label: 'CV / Resume', mandatory: true },
-  { type: 'PERSONAL_LETTER', label: 'Personal letter detailing the reason for the application', mandatory: true },
-  { type: 'STUDENT_ID_COPY', label: 'Copy of ID + appendix of the student', mandatory: true },
-  { type: 'PARENT_ID_COPY', label: "Copy of ID + appendix of the student's parent", mandatory: true },
-  { type: 'ENROLLMENT_CERTIFICATE', label: 'Certificate of enrollment / Letter of acceptance', mandatory: false },
-  { type: 'CLASS_SCHEDULE', label: 'Class schedule / Certificate of enrollment (study hours)', mandatory: false },
-  { type: 'SERVICE_CERTIFICATE', label: 'Certificate of military / national / volunteer service', mandatory: false },
-  { type: 'PRE_MILITARY_CERTIFICATE', label: 'Certificate regarding a year of service / pre-military academy', mandatory: false },
-  { type: 'BANK_CONFIRMATION', label: 'Confirmation of bank account management', mandatory: true },
+  { type: 'CV', mandatory: true },
+  { type: 'PERSONAL_LETTER', mandatory: true },
+  { type: 'STUDENT_ID_COPY', mandatory: true },
+  { type: 'PARENT_ID_COPY', mandatory: true },
+  { type: 'ENROLLMENT_CERTIFICATE', mandatory: false },
+  { type: 'CLASS_SCHEDULE', mandatory: false },
+  { type: 'SERVICE_CERTIFICATE', mandatory: false },
+  { type: 'PRE_MILITARY_CERTIFICATE', mandatory: false },
+  { type: 'BANK_CONFIRMATION', mandatory: true },
 ];
 
 function registrationToForm(registration, user) {
@@ -99,6 +100,7 @@ function registrationToForm(registration, user) {
 export default function StudentRegistrationForm() {
   const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [form, setForm] = useState(() => registrationToForm(null, user));
   const [options, setOptions] = useState([]);
   const [files, setFiles] = useState([]);
@@ -181,7 +183,7 @@ export default function StudentRegistrationForm() {
       setForm(registrationToForm(saved, user));
       setFiles(saved?.files || []);
       if (!silent) {
-        setMessage('Draft saved. You can continue later or submit when everything is ready.');
+        setMessage(t('registration.draftSaved'));
       }
       return saved;
     } catch (error) {
@@ -209,7 +211,7 @@ export default function StudentRegistrationForm() {
         const next = prev.filter((item) => item.fileType !== fileType);
         return [...next, uploaded];
       });
-      setMessage(`${file.name} uploaded.`);
+      setMessage(t('registration.fileUploaded', { name: file.name }));
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -230,8 +232,8 @@ export default function StudentRegistrationForm() {
       const missingFields = error.details?.missingFields || [];
       const missingFiles = error.details?.missingFiles || [];
       const details = [
-        missingFields.length ? `Missing fields: ${missingFields.join(', ')}` : null,
-        missingFiles.length ? `Missing files: ${missingFiles.join(', ')}` : null,
+        missingFields.length ? t('registration.missingFields', { fields: missingFields.join(', ') }) : null,
+        missingFiles.length ? t('registration.missingFiles', { files: missingFiles.join(', ') }) : null,
       ].filter(Boolean).join(' ');
       setMessage(details || error.message);
     } finally {
@@ -248,7 +250,7 @@ export default function StudentRegistrationForm() {
           onChange={(event) => setField(name, event.target.value)}
           required={required}
         >
-          <option value="">Select...</option>
+          <option value="">{t('common.select')}</option>
           {(optionsByField[name] || []).map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -259,136 +261,124 @@ export default function StudentRegistrationForm() {
     );
   }
 
+  function BooleanField({ name, label }) {
+    return (
+      <label className="form-field">
+        <span>{label} *</span>
+        <select
+          value={form[name] ? 'true' : 'false'}
+          onChange={(event) => setField(name, event.target.value === 'true')}
+        >
+          <option value="false">{t('common.no')}</option>
+          <option value="true">{t('common.yes')}</option>
+        </select>
+      </label>
+    );
+  }
+
   return (
     <Layout
-      title="Scholars Registration"
-      subtitle="Complete this form and upload the required documents before using the student dashboard."
+      title={t('registration.title')}
+      subtitle={t('registration.subtitle')}
     >
       {message ? <p className="status">{message}</p> : null}
-      {loading ? <p className="muted">Loading registration form...</p> : null}
+      {loading ? <p className="muted">{t('registration.loadingForm')}</p> : null}
 
       <form className="panel registration-form" onSubmit={saveForm} noValidate>
-        <h2>Personal details</h2>
+        <h2>{t('registration.personalDetails')}</h2>
 
         <label className="form-field">
-          <span>First Name *</span>
+          <span>{t('registration.firstName')} *</span>
           <input value={form.firstName} onChange={(event) => setField('firstName', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>Last Name *</span>
+          <span>{t('registration.lastName')} *</span>
           <input value={form.lastName} onChange={(event) => setField('lastName', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>ID Number *</span>
+          <span>{t('registration.idNumber')} *</span>
           <input value={form.idNumber} onChange={(event) => setField('idNumber', event.target.value)} required />
         </label>
-        <SelectField name="gender" label="Gender" required />
+        <SelectField name="gender" label={t('registration.gender')} required />
         <label className="form-field">
-          <span>Date of Birth *</span>
+          <span>{t('registration.dateOfBirth')} *</span>
           <input type="date" value={form.dateOfBirth} onChange={(event) => setField('dateOfBirth', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>Mailing Address *</span>
+          <span>{t('registration.mailingAddress')} *</span>
           <input value={form.mailingAddress} onChange={(event) => setField('mailingAddress', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>Additional Address</span>
+          <span>{t('registration.additionalAddress')}</span>
           <input value={form.additionalAddress} onChange={(event) => setField('additionalAddress', event.target.value)} />
         </label>
         <label className="form-field">
-          <span>Email *</span>
+          <span>{t('registration.email')} *</span>
           <input type="email" value={form.contactEmail} onChange={(event) => setField('contactEmail', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>Mobile Phone *</span>
+          <span>{t('registration.mobilePhone')} *</span>
           <input type="tel" value={form.mobilePhone} onChange={(event) => setField('mobilePhone', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>Additional Phone</span>
+          <span>{t('registration.additionalPhone')}</span>
           <input type="tel" value={form.additionalPhone} onChange={(event) => setField('additionalPhone', event.target.value)} />
         </label>
         <label className="form-field">
-          <span>Father&apos;s Name *</span>
+          <span>{t('registration.fatherName')} *</span>
           <input value={form.fatherName} onChange={(event) => setField('fatherName', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>Mother&apos;s Name *</span>
+          <span>{t('registration.motherName')} *</span>
           <input value={form.motherName} onChange={(event) => setField('motherName', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>Spouse&apos;s Name</span>
+          <span>{t('registration.spouseName')}</span>
           <input value={form.spouseName} onChange={(event) => setField('spouseName', event.target.value)} />
         </label>
-        <SelectField name="maritalStatus" label="Marital Status" required />
+        <SelectField name="maritalStatus" label={t('registration.maritalStatus')} required />
         <label className="form-field">
-          <span>Number of Children *</span>
+          <span>{t('registration.numberOfChildren')} *</span>
           <input type="number" min="0" step="1" value={form.numberOfChildren} onChange={(event) => setField('numberOfChildren', event.target.value)} required />
         </label>
-        <SelectField name="spouseStatus" label="Spouse Status" />
+        <SelectField name="spouseStatus" label={t('registration.spouseStatus')} />
+        <BooleanField name="preMilitaryAcademyYear" label={t('registration.preMilitaryYear')} />
+        <SelectField name="militaryService" label={t('registration.militaryService')} required />
+        <BooleanField name="loneSoldierStatus" label={t('registration.loneSoldier')} />
+        <SelectField name="academicInstitutionName" label={t('registration.academicInstitution')} required />
+        <SelectField name="yearOfStudy" label={t('registration.yearOfStudy')} required />
+        <SelectField name="fieldOfStudy" label={t('registration.fieldOfStudy')} required />
         <label className="form-field">
-          <span>Year of Service / Pre-Military Academy *</span>
-          <select
-            value={form.preMilitaryAcademyYear ? 'true' : 'false'}
-            onChange={(event) => setField('preMilitaryAcademyYear', event.target.value === 'true')}
-          >
-            <option value="false">No</option>
-            <option value="true">Yes</option>
-          </select>
-        </label>
-        <SelectField name="militaryService" label="Military / National Service" required />
-        <label className="form-field">
-          <span>Lone Soldier Status *</span>
-          <select
-            value={form.loneSoldierStatus ? 'true' : 'false'}
-            onChange={(event) => setField('loneSoldierStatus', event.target.value === 'true')}
-          >
-            <option value="false">No</option>
-            <option value="true">Yes</option>
-          </select>
-        </label>
-        <SelectField name="academicInstitutionName" label="Academic Institution Name" required />
-        <SelectField name="yearOfStudy" label="Year of Study" required />
-        <SelectField name="fieldOfStudy" label="Field of Study" required />
-        <label className="form-field">
-          <span>Weekly Study Hours *</span>
+          <span>{t('registration.weeklyStudyHours')} *</span>
           <input type="number" min="1" step="1" value={form.weeklyStudyHours} onChange={(event) => setField('weeklyStudyHours', event.target.value)} required />
         </label>
+        <BooleanField name="previousCouncilScholarship" label={t('registration.previousScholarship')} />
         <label className="form-field">
-          <span>Previous Council Scholarship *</span>
-          <select
-            value={form.previousCouncilScholarship ? 'true' : 'false'}
-            onChange={(event) => setField('previousCouncilScholarship', event.target.value === 'true')}
-          >
-            <option value="false">No</option>
-            <option value="true">Yes</option>
-          </select>
-        </label>
-        <label className="form-field">
-          <span>Volunteering Location - First Option *</span>
+          <span>{t('registration.volunteeringFirst')} *</span>
           <input value={form.volunteeringLocationFirstOption} onChange={(event) => setField('volunteeringLocationFirstOption', event.target.value)} required />
         </label>
         <label className="form-field">
-          <span>First Option Sub-Choice</span>
+          <span>{t('registration.firstSub')}</span>
           <input value={form.firstOptionSubChoice} onChange={(event) => setField('firstOptionSubChoice', event.target.value)} />
         </label>
         <label className="form-field">
-          <span>Volunteering Location - Second Option</span>
+          <span>{t('registration.volunteeringSecond')}</span>
           <input value={form.volunteeringLocationSecondOption} onChange={(event) => setField('volunteeringLocationSecondOption', event.target.value)} />
         </label>
         <label className="form-field">
-          <span>Third Option Sub-Choice</span>
+          <span>{t('registration.thirdSub')}</span>
           <input value={form.thirdOptionSubChoice} onChange={(event) => setField('thirdOptionSubChoice', event.target.value)} />
         </label>
         <label className="form-field">
-          <span>Volunteering Location - Third Option</span>
+          <span>{t('registration.volunteeringThird')}</span>
           <input value={form.volunteeringLocationThirdOption} onChange={(event) => setField('volunteeringLocationThirdOption', event.target.value)} />
         </label>
         <label className="form-field">
-          <span>Second Option Sub-Choice</span>
+          <span>{t('registration.secondSub')}</span>
           <input value={form.secondOptionSubChoice} onChange={(event) => setField('secondOptionSubChoice', event.target.value)} />
         </label>
         <label className="form-field">
-          <span>Personal Explanation Letter *</span>
+          <span>{t('registration.personalLetter')} *</span>
           <textarea
             value={form.personalExplanationLetter}
             onChange={(event) => setField('personalExplanationLetter', event.target.value)}
@@ -397,14 +387,14 @@ export default function StudentRegistrationForm() {
 
         <div className="actions form-actions">
           <button type="submit" className="secondary" disabled={saving || submitting}>
-            {saving ? 'Saving...' : 'Save draft'}
+            {saving ? t('registration.saving') : t('registration.saveDraft')}
           </button>
         </div>
       </form>
 
       <section className="panel registration-files">
-        <h2>Required documents</h2>
-        <p className="muted">Upload each file. Mandatory files must be present before you can submit.</p>
+        <h2>{t('registration.requiredDocs')}</h2>
+        <p className="muted">{t('registration.uploadHelp')}</p>
 
         <div className="file-slot-list">
           {fileSlots.map((slot) => {
@@ -413,10 +403,14 @@ export default function StudentRegistrationForm() {
             return (
               <article className="file-slot" key={slot.type}>
                 <div>
-                  <strong>{slot.label}</strong>
-                  <span className="muted">{slot.mandatory ? 'Mandatory' : 'Optional'}</span>
+                  <strong>{t(`registration.files.${slot.type}`)}</strong>
+                  <span className="muted">
+                    {slot.mandatory ? t('registration.mandatory') : t('registration.optional')}
+                  </span>
                   <p className="muted">
-                    {current ? `Uploaded: ${current.fileName}` : 'Not uploaded'}
+                    {current
+                      ? t('registration.uploadedFile', { name: current.fileName })
+                      : t('registration.notUploaded')}
                   </p>
                 </div>
                 <label className="file-upload-button">
@@ -430,7 +424,11 @@ export default function StudentRegistrationForm() {
                     disabled={Boolean(uploadingType)}
                   />
                   <span className="button-like secondary">
-                    {uploadingType === slot.type ? 'Uploading...' : current ? 'Replace file' : 'Upload file'}
+                    {uploadingType === slot.type
+                      ? t('registration.uploading')
+                      : current
+                        ? t('registration.replaceFile')
+                        : t('registration.uploadFile')}
                   </span>
                 </label>
               </article>
@@ -440,7 +438,7 @@ export default function StudentRegistrationForm() {
 
         <div className="actions form-actions">
           <button type="button" onClick={submitRegistration} disabled={saving || submitting || loading}>
-            {submitting ? 'Submitting...' : 'Submit registration'}
+            {submitting ? t('registration.submitting') : t('registration.submitRegistration')}
           </button>
         </div>
       </section>

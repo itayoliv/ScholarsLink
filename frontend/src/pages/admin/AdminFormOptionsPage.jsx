@@ -1,68 +1,77 @@
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { apiRequest } from '../../api';
 import AdminEntityPage from '../../components/AdminEntityPage';
 
-const fieldKeyOptions = [
-  { value: 'gender', label: 'Gender' },
-  { value: 'maritalStatus', label: 'Marital status' },
-  { value: 'spouseStatus', label: 'Spouse status' },
-  { value: 'militaryService', label: 'Military / national service' },
-  { value: 'academicInstitutionName', label: 'Academic institution' },
-  { value: 'yearOfStudy', label: 'Year of study' },
-  { value: 'fieldOfStudy', label: 'Field of study' },
+const fieldKeys = [
+  'gender',
+  'maritalStatus',
+  'spouseStatus',
+  'militaryService',
+  'academicInstitutionName',
+  'yearOfStudy',
+  'fieldOfStudy',
 ];
-
-const activeOptions = [
-  { value: 'true', label: 'Active' },
-  { value: 'false', label: 'Inactive' },
-];
-
-const columns = [
-  { key: 'id', label: 'ID' },
-  {
-    key: 'fieldKey',
-    label: 'Field',
-    filter: { type: 'select', options: fieldKeyOptions },
-    render: (record) => fieldKeyOptions.find((item) => item.value === record.fieldKey)?.label || record.fieldKey,
-  },
-  { key: 'value', label: 'Value', filter: { type: 'text' } },
-  { key: 'label', label: 'Label', filter: { type: 'text' } },
-  { key: 'sortOrder', label: 'Order' },
-  {
-    key: 'active',
-    label: 'Active',
-    render: (record) => (record.active ? 'Yes' : 'No'),
-    filter: {
-      type: 'select',
-      options: activeOptions,
-      getValue: (record) => (record.active ? 'true' : 'false'),
-    },
-  },
-];
-
-function getFields() {
-  return [
-    {
-      name: 'fieldKey',
-      label: 'Field key',
-      type: 'select',
-      options: fieldKeyOptions,
-      placeholder: 'Select field',
-      required: true,
-    },
-    { name: 'value', label: 'Value', type: 'text', required: true, hint: 'Stable machine value (do not translate).' },
-    { name: 'label', label: 'Label', type: 'text', required: true, hint: 'Visible text (can later be Hebrew).' },
-    { name: 'sortOrder', label: 'Sort order', type: 'number', min: '0', step: '1' },
-    { name: 'active', label: 'Active', type: 'checkbox' },
-  ];
-}
 
 export default function AdminFormOptionsPage() {
+  const { t } = useTranslation();
+
+  const fieldKeyOptions = useMemo(
+    () => fieldKeys.map((key) => ({ value: key, label: t(`admin.formOptions.keys.${key}`) })),
+    [t],
+  );
+
+  const activeOptions = useMemo(() => [
+    { value: 'true', label: t('common.active') },
+    { value: 'false', label: t('common.inactive') },
+  ], [t]);
+
+  const columns = useMemo(() => [
+    { key: 'id', label: t('common.id') },
+    {
+      key: 'fieldKey',
+      label: t('admin.formOptions.field'),
+      filter: { type: 'select', options: fieldKeyOptions },
+      render: (record) => fieldKeyOptions.find((item) => item.value === record.fieldKey)?.label || record.fieldKey,
+    },
+    { key: 'value', label: t('admin.formOptions.value'), filter: { type: 'text' } },
+    { key: 'label', label: t('admin.formOptions.label'), filter: { type: 'text' } },
+    { key: 'sortOrder', label: t('admin.formOptions.order') },
+    {
+      key: 'active',
+      label: t('common.active'),
+      render: (record) => (record.active ? t('common.yes') : t('common.no')),
+      filter: {
+        type: 'select',
+        options: activeOptions,
+        getValue: (record) => (record.active ? 'true' : 'false'),
+      },
+    },
+  ], [t, fieldKeyOptions, activeOptions]);
+
+  function getFields() {
+    return [
+      {
+        name: 'fieldKey',
+        label: t('admin.formOptions.fieldKey'),
+        type: 'select',
+        options: fieldKeyOptions,
+        placeholder: t('admin.formOptions.selectField'),
+        required: true,
+      },
+      { name: 'value', label: t('admin.formOptions.value'), type: 'text', required: true, hint: t('admin.formOptions.valueHint') },
+      { name: 'label', label: t('admin.formOptions.label'), type: 'text', required: true, hint: t('admin.formOptions.labelHint') },
+      { name: 'sortOrder', label: t('admin.formOptions.sortOrder'), type: 'number', min: '0', step: '1' },
+      { name: 'active', label: t('common.active'), type: 'checkbox' },
+    ];
+  }
+
   return (
     <AdminEntityPage
-      title="Form options"
-      subtitle="Edit dropdown values used by the Scholars Registration form. Labels can be changed later for Hebrew."
+      title={t('admin.formOptions.title')}
+      subtitle={t('admin.formOptions.subtitle')}
       entity="form-options"
-      entityLabel="Form option"
+      entityLabel={t('admin.entities.formOption')}
       loadRecords={() => apiRequest('/form-options')}
       columns={columns}
       getFields={getFields}

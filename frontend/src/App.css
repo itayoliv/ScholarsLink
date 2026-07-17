@@ -23,6 +23,13 @@
   margin: 4px 0 0;
 }
 
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .page-hero {
   margin-bottom: 18px;
 }
@@ -121,7 +128,7 @@
 
 .info-panel ul {
   margin: 0;
-  padding-left: 18px;
+  padding-inline-start: 18px;
   color: var(--muted);
 }
 
@@ -245,7 +252,7 @@ table {
 
 th,
 td {
-  text-align: left;
+  text-align: start;
   padding: 10px 8px;
   border-bottom: 1px solid var(--border);
   vertical-align: top;

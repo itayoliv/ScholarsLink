@@ -1,14 +1,11 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth';
-
-const roleLabels = {
-  STUDENT: 'Student',
-  SUPERVISOR: 'Supervisor',
-  ADMIN: 'Administrator',
-};
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Layout({ children, title, subtitle }) {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
 
   return (
     <div className="app-shell">
@@ -18,14 +15,19 @@ export default function Layout({ children, title, subtitle }) {
             ScholarsLink
           </Link>
           <p className="muted topbar-meta">
-            {user ? `${user.name} · ${roleLabels[user.role] || user.role}` : 'Volunteer hours tracking'}
+            {user
+              ? `${user.name} · ${t(`rolesShort.${user.role}`, { defaultValue: user.role })}`
+              : t('layout.tagline')}
           </p>
         </div>
-        {user ? (
-          <button type="button" className="secondary" onClick={logout}>
-            Log out
-          </button>
-        ) : null}
+        <div className="topbar-actions">
+          <LanguageSwitcher />
+          {user ? (
+            <button type="button" className="secondary" onClick={logout}>
+              {t('layout.logout')}
+            </button>
+          ) : null}
+        </div>
       </header>
 
       {(title || subtitle) ? (
