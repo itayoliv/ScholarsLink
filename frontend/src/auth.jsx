@@ -50,12 +50,13 @@ export function AuthProvider({ children }) {
   }
 
   async function logout() {
+    // Log out locally right away so the UI never hangs on a slow/unreachable API.
+    setUser(null);
     try {
       await apiRequest('/auth/logout', { method: 'POST' });
     } catch {
-      // Still clear local auth state if the request fails.
+      // Session cookie stays until the backend is reachable again; UI is already logged out.
     }
-    setUser(null);
   }
 
   const value = useMemo(

@@ -16,6 +16,27 @@ function publicUser(user) {
 }
 
 function attachRelations() {
+  // Reset relations attached by previous calls; otherwise each call nests the
+  // prior call's attachments one level deeper and data grows exponentially.
+  for (const placement of state.placements) {
+    delete placement.supervisor;
+    delete placement.memberships;
+  }
+  for (const join of state.joinRequests) {
+    delete join.student;
+    delete join.placement;
+    delete join.reviewedBy;
+  }
+  for (const log of state.hourLogs) {
+    delete log.student;
+    delete log.placement;
+    delete log.reviewedBy;
+  }
+  for (const membership of state.memberships) {
+    delete membership.student;
+    delete membership.placement;
+  }
+
   const usersById = new Map(state.users.map((u) => [u.id, u]));
   const placementsById = new Map(state.placements.map((p) => [p.id, p]));
 
