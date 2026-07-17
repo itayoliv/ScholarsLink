@@ -180,7 +180,11 @@ app.post('/api/query', asyncHandler(async (req, res) => {
   const [result, fields] = await pool.query(sql);
   const outputs = [];
 
-  if (Array.isArray(result) && Array.isArray(fields) && Array.isArray(fields[0])) {
+  // Multi-statement scripts: fields has one entry per statement, which is
+  // either an array of columns (SELECT) or undefined (SET/INSERT/UPDATE...).
+  const isMulti = Array.isArray(fields) && fields.some((f) => Array.isArray(f) || f === undefined);
+
+  if (Array.isArray(result) && isMulti) {
     // multipleStatements: result and fields are arrays of result sets
     for (let i = 0; i < result.length; i += 1) {
       const part = result[i];

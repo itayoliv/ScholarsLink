@@ -41,3 +41,7 @@ run-allow-firewall.bat
 refresh-schema.bat
 run-backend-host.bat
 run-frontend-host.bat
+kill-api-port.bat
+
+# Local SQL helper scripts (contain notes about secrets; run manually via SQL editor)
+scripts/
