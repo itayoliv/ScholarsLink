@@ -119,7 +119,7 @@ function createInitialState() {
       role: 'STUDENT',
       password: DEMO_PASSWORD,
       phone: null,
-      formsCompleted: true,
+      formsCompleted: false,
       createdAt: now,
       updatedAt: now,
     },
