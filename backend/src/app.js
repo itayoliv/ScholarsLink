@@ -1,6 +1,9 @@
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import './env.js';
 
 import adminRouter from './routes/admin.js';
@@ -70,6 +73,23 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+// Serve the built frontend (frontend/dist) so the app and API share one origin in production.
+const distDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../frontend/dist');
+const indexHtml = path.join(distDir, 'index.html');
+
+if (fs.existsSync(indexHtml)) {
+  app.use(express.static(distDir));
+
+  // SPA fallback: browser page navigations (Accept: text/html) get index.html,
+  // while fetch() API calls fall through to the API routes below.
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && req.headers.accept?.includes('text/html')) {
+      return res.sendFile(indexHtml);
+    }
+    next();
+  });
+}
 
 app.use(healthRouter);
 app.use('/auth', authRouter);
