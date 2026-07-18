@@ -10,19 +10,40 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT) || 4100;
-const database = process.env.DB_NAME || 'scholarslink';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT) || 3306,
-  user: process.env.DB_USER || 'scholarslink_user',
-  password: process.env.DB_PASSWORD || 'scholarslink_password',
-  database,
-  waitForConnections: true,
-  connectionLimit: 10,
-  multipleStatements: true,
-  dateStrings: true,
-});
+function resolveDbConfig() {
+  const shared = {
+    waitForConnections: true,
+    connectionLimit: 10,
+    multipleStatements: true,
+    dateStrings: true,
+  };
+
+  if (process.env.DATABASE_URL) {
+    const url = new URL(process.env.DATABASE_URL);
+    return {
+      ...shared,
+      host: url.hostname,
+      port: Number(url.port || 3306),
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      database: url.pathname.replace(/^\//, '') || 'scholarslink',
+    };
+  }
+
+  return {
+    ...shared,
+    host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT) || 3306,
+    user: process.env.DB_USER || 'scholarslink_user',
+    password: process.env.DB_PASSWORD || 'scholarslink_password',
+    database: process.env.DB_NAME || 'scholarslink',
+  };
+}
+
+const dbConfig = resolveDbConfig();
+const database = dbConfig.database;
+const pool = mysql.createPool(dbConfig);
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
