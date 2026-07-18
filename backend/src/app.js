@@ -37,7 +37,7 @@ function isPrivateLanHostname(hostname) {
   );
 }
 
-function isAllowedOrigin(origin) {
+function isAllowedOrigin(origin, req) {
   if (!origin) {
     return true;
   }
@@ -48,6 +48,17 @@ function isAllowedOrigin(origin) {
 
   try {
     const url = new URL(origin);
+    const originHost = url.host.toLowerCase();
+    const requestHost = (req.get('x-forwarded-host') || req.get('host') || '')
+      .split(',')[0]
+      .trim()
+      .toLowerCase();
+
+    // Same URL for SPA + API (Railway/Render/Express static) — no FRONTEND_ORIGIN needed.
+    if (requestHost && originHost === requestHost) {
+      return true;
+    }
+
     const host = url.hostname;
 
     if (host.endsWith('.ngrok-free.app') || host.endsWith('.ngrok-free.dev') || host.endsWith('.ngrok.io') || host.endsWith('.ngrok.app')) {
@@ -60,17 +71,19 @@ function isAllowedOrigin(origin) {
   }
 }
 
-app.use(cors({
-  origin(origin, callback) {
-    if (isAllowedOrigin(origin)) {
-      callback(null, true);
-      return;
-    }
+app.use((req, res, next) => {
+  cors({
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin, req)) {
+        callback(null, true);
+        return;
+      }
 
-    callback(new Error(`Origin ${origin} is not allowed by CORS.`));
-  },
-  credentials: true,
-}));
+      callback(new Error(`Origin ${origin} is not allowed by CORS.`));
+    },
+    credentials: true,
+  })(req, res, next);
+});
 app.use(express.json());
 app.use(cookieParser());
 
