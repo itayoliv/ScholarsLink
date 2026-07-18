@@ -1,6 +1,9 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import mysql from 'mysql2/promise';
 
 dotenv.config();
@@ -23,6 +26,21 @@ const pool = mysql.createPool({
 
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
+
+// Serve the built client (sql-editor/client/dist) so UI and API share one origin in production.
+const distDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
+const indexHtml = path.join(distDir, 'index.html');
+
+if (fs.existsSync(indexHtml)) {
+  app.use(express.static(distDir));
+
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && req.headers.accept?.includes('text/html')) {
+      return res.sendFile(indexHtml);
+    }
+    next();
+  });
+}
 
 function asyncHandler(handler) {
   return async (req, res, next) => {
